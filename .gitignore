@@ -6,3 +6,4 @@ uros_ws/install
 uros_ws/build
 uros_ws/.vscode
 uros_ws/firmware
+uros_ws/src/uros
