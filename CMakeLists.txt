@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.12)
 # Change your executable name to something creative!
 set(NAME rover_drive_pico) # <-- Name your project/executable here!
 
+set(FREERTOS_KERNEL_PATH ${CMAKE_SOURCE_DIR}/lib/FreeRTOS-Kernel)
+
 include(pico_sdk_import.cmake)
+include(FreeRTOS_Kernel_import.cmake)
 
 # Gooey boilerplate
 project(${NAME} C CXX ASM)

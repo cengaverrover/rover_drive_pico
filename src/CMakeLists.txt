@@ -5,12 +5,15 @@ add_executable(${NAME}
 
 # Pull in our pico_stdlib which pulls in commonly used features
 target_link_libraries(${NAME} 
-     pico_stdlib
+    pico_stdlib
      micro_ros
+     FreeRTOS-Kernel-Static
+     FreeRTOS-Kernel-Heap4 
 )
 	
 target_include_directories(${NAME} PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_SOURCE_DIR}/include
 )
      
 # create map/bin/hex file etc.
