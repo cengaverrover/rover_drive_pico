@@ -1,2 +1,0 @@
-int32 max_rpm
-float32 max_dutycycle

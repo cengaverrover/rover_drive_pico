@@ -27,3 +27,29 @@ set(FLAGS "-O2 -march=armv6-m -mcpu=cortex-m0plus -mthumb -ffunction-sections -f
 
 set(CMAKE_C_FLAGS_INIT "-std=c11 ${FLAGS} -DCLOCK_MONOTONIC=0 -D'__attribute__(x)='" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_INIT "-std=c++17 ${FLAGS} -fno-rtti -DCLOCK_MONOTONIC=0 -D'__attribute__(x)='" CACHE STRING "" FORCE)
+
+# add_compile_definitions(PLATFORM_NAME_FREERTOS)
+
+# include_directories(${CMAKE_CURRENT_LIST_DIR}/../lib/FreeRTOS-Kernel/include)
+# include_directories(${CMAKE_CURRENT_LIST_DIR}/../lib/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/include)
+# include_directories(${CMAKE_CURRENT_LIST_DIR}/../include)
+
+# # pico_base_headers
+# # hardware_clocks
+# # hardware_exception
+# # pico_multicore
+
+# include_directories(
+#     $ENV{PICO_SDK_PATH}/build/generated/pico_base
+#     $ENV{PICO_SDK_PATH}/src/rp2040/hardware_regs/include
+#     $ENV{PICO_SDK_PATH}/src/rp2040/hardware_structs/include
+#     $ENV{PICO_SDK_PATH}/src/rp2_common/hardware_timer/include
+#     $ENV{PICO_SDK_PATH}/src/rp2_common/hardware_base/include
+#     $ENV{PICO_SDK_PATH}/src/rp2_common/hardware_sync/include
+#     $ENV{PICO_SDK_PATH}/src/rp2_common/pico_platform/include
+#     $ENV{PICO_SDK_PATH}/src/common/pico_base/include
+#     $ENV{PICO_SDK_PATH}/src/common/pico_time/include
+#     $ENV{PICO_SDK_PATH}/src/common/pico_sync/include
+# )
+
+

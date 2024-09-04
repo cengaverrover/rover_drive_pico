@@ -1,14 +1,17 @@
+file(GLOB CXX_SOURCES *.cpp)
+file(GLOB C_SOURCES *.c)
+
 add_executable(${NAME}
-        main.cpp
-        pico_uart_transport.c
+    ${CXX_SOURCES}
+    ${C_SOURCES}
 )
 
 # Pull in our pico_stdlib which pulls in commonly used features
 target_link_libraries(${NAME} 
     pico_stdlib
-     micro_ros
-     FreeRTOS-Kernel-Static
-     FreeRTOS-Kernel-Heap4 
+    micro_ros
+    FreeRTOS-Kernel-Static
+    FreeRTOS-Kernel-Heap4 
 )
 	
 target_include_directories(${NAME} PRIVATE

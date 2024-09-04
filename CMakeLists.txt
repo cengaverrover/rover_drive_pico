@@ -18,9 +18,12 @@ pico_sdk_init()
 
 #include Libraries
 
+add_compile_definitions( 
+    PLATFORM_NAME_FREERTOS
+)
+
 SET(MICRO_ROS_PATH "${CMAKE_CURRENT_LIST_DIR}/uros_ws/firmware/build" CACHE STRING "Course Common Lib")
 include(micro_ros.cmake)
-
 
 #Add main source directory
 add_subdirectory(src)
