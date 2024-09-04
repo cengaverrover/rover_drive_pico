@@ -3,7 +3,6 @@ build
 .cache
 uros_ws/log
 uros_ws/install
-uros_ws/build
 uros_ws/.vscode
-uros_ws/firmware
 uros_ws/src/uros
+uros_ws/build
