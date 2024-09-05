@@ -9,7 +9,7 @@ extern "C" {
 #include <rclc/rclc.h>
 #include <rclc_parameter/rclc_parameter.h>
 #include <rmw_microros/rmw_microros.h>
-#include <rover_drive_interfaces/msg/drive.h>
+#include <rover_drive_interfaces/msg/motor_drive.h>
 #include <rover_drive_interfaces/msg/motor_feedback.h>
 #include <std_msgs/msg/int32.h>
 }
@@ -24,15 +24,14 @@ static rover_drive_interfaces__msg__MotorFeedback msg_left{
 static rover_drive_interfaces__msg__MotorFeedback msg_right{
     .dutycycle = 0.0f, .encoder_rpm = 0, .current = 0};
 
-static rover_drive_interfaces__msg__Drive msg_drive = {.left_rpm = 0,
-                                                  .right_rpm = 0};
+static rover_drive_interfaces__msg__MotorDrive msg_drive = {.target_rpm = 0, .rotation_rads = 0.0f};
 
 namespace timers {
 
 void timer_callback1(rcl_timer_t *timer, int64_t last_call_time) {
-  msg_left.dutycycle = msg_drive.left_rpm / 200.0f;
-  msg_left.encoder_rpm = msg_drive.left_rpm;
-  msg_left.encoder_rpm = msg_left.dutycycle * 30.0f / 100.0f ;
+  msg_left.dutycycle = msg_drive.target_rpm / 200.0f;
+  msg_left.encoder_rpm = msg_drive.target_rpm;
+  msg_left.current = msg_left.dutycycle * 30.0f / 100.0f ;
   rcl_ret_t ret = rcl_publish(&publisher_left, &msg_left, NULL);
 }
 
@@ -44,10 +43,10 @@ void subscriber_callback(const void *msgin) {
   if (msgin == NULL) {
     return;
   }
-  auto msg = static_cast<const rover_drive_interfaces__msg__Drive *>(msgin);
+  auto msg = static_cast<const rover_drive_interfaces__msg__MotorDrive *>(msgin);
 
-  msg_drive.left_rpm = msg->left_rpm;
-  msg_drive.right_rpm = msg->right_rpm;
+  msg_drive.target_rpm = msg->target_rpm;
+  msg_drive.rotation_rads = msg->rotation_rads;
 }
 } // namespace callbacks
 
@@ -72,7 +71,7 @@ void micro_ros(void *args) {
   rcl_subscription_t subscriber = rcl_get_zero_initialized_subscription();
   rclc_subscription_init_default(
       &subscriber, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, Drive),
+      ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive),
       "pico_drive");
 
   rcl_timer_t timer1 = rcl_get_zero_initialized_timer();
