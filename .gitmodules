@@ -11,3 +11,6 @@
 [submodule "lib/etlcpp"]
 	path = lib/etlcpp
 	url = https://github.com/ETLCPP/etl.git
+[submodule "lib/motor_drivers"]
+	path = lib/motor_drivers
+	url = https://github.com/alpertng02/pico_motor_drivers.git

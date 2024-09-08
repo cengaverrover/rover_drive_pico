@@ -13,6 +13,7 @@ target_link_libraries(${NAME}
     FreeRTOS-Kernel-Static
     FreeRTOS-Kernel-Heap4 
     etl::etl
+    pico_BTS7960
 )
 	
 target_include_directories(${NAME} PRIVATE

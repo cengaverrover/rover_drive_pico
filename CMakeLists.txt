@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 # Change your executable name to something creative!
 set(NAME rover_drive_pico) # <-- Name your project/executable here!
@@ -28,6 +28,8 @@ include(micro_ros.cmake)
 #include ETL
 set(GIT_DIR_LOOKUP_POLICY ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
 add_subdirectory(lib/etlcpp)
+
+add_subdirectory(lib/motor_drivers/lib)
 
 #Add main source directory
 add_subdirectory(src)

@@ -6,10 +6,14 @@
 
 #include <etl/array.h>
 
+#include "BTS7960.hpp"
+#include "pinout.hpp"
+
 namespace ros {
 
-static etl::array<rcl_publisher_t, 4> publishers{};
-static etl::array<rover_drive_interfaces__msg__MotorFeedback, publishers.size()> msgs{};
+static etl::array<rcl_publisher_t, pinout::motorPwmL.size()> publishers{};
+static etl::array<rover_drive_interfaces__msg__MotorFeedback, publishers.size()>
+    msgs{};
 static etl::array<QueueHandle_t, publishers.size()> publisherQueues{};
 static QueueHandle_t driveQueue{};
 
@@ -17,6 +21,9 @@ static rover_drive_interfaces__msg__MotorDrive msgDrive = {
     .target_rpm = 0, .rotation_rads = 0.0f};
 
 template <size_t i> void publisherTask(void *arg) {
+
+  Motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
+
   rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
   rover_drive_interfaces__msg__MotorFeedback feedbackMsgSent{};
   TickType_t startTick{xTaskGetTickCount()};
@@ -26,8 +33,9 @@ template <size_t i> void publisherTask(void *arg) {
       feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
       feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
     }
+    motor.setSpeed(feedbackMsgSent.dutycycle);
     xQueueOverwrite(publisherQueues[i], &feedbackMsgSent);
-    xTaskDelayUntil(&startTick, pdMS_TO_TICKS(100));
+    xTaskDelayUntil(&startTick, pdMS_TO_TICKS(50));
   }
 }
 extern "C" {
@@ -136,9 +144,7 @@ static void microRosTask(void *arg) {
 void Node::spin() {
   xTaskCreateAffinitySet(microRosTask, "executor_task", 4000, nullptr, 4, 0x01,
                          nullptr);
-
   vTaskStartScheduler();
 }
-
 
 } // namespace ros
