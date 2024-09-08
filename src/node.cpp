@@ -8,6 +8,7 @@
 
 #include "BTS7960.hpp"
 #include "pinout.hpp"
+#include "encoder_substep.hpp"
 
 namespace ros {
 
@@ -22,7 +23,8 @@ static rover_drive_interfaces__msg__MotorDrive msgDrive = {
 
 template <size_t i> void publisherTask(void *arg) {
 
-  Motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
+  motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
+  encoder::EncoderSubstep encoder(pio0, i, pinout::encoderA[i]);
 
   rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
   rover_drive_interfaces__msg__MotorFeedback feedbackMsgSent{};

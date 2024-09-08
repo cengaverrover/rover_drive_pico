@@ -30,6 +30,7 @@ set(GIT_DIR_LOOKUP_POLICY ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
 add_subdirectory(lib/etlcpp)
 
 add_subdirectory(lib/motor_drivers/lib)
+add_subdirectory(lib/pico_encoder_substep/lib)
 
 #Add main source directory
 add_subdirectory(src)

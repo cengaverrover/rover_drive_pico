@@ -14,3 +14,6 @@
 [submodule "lib/motor_drivers"]
 	path = lib/motor_drivers
 	url = https://github.com/alpertng02/pico_motor_drivers.git
+[submodule "lib/pico_encoder_substep"]
+	path = lib/pico_encoder_substep
+	url = https://github.com/alpertng02/pico-encoder-cpp.git

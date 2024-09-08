@@ -14,6 +14,7 @@ target_link_libraries(${NAME}
     FreeRTOS-Kernel-Heap4 
     etl::etl
     pico_BTS7960
+    pico_encoder_substep_class
 )
 	
 target_include_directories(${NAME} PRIVATE
