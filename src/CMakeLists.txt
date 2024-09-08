@@ -12,6 +12,7 @@ target_link_libraries(${NAME}
     micro_ros
     FreeRTOS-Kernel-Static
     FreeRTOS-Kernel-Heap4 
+    etl::etl
 )
 	
 target_include_directories(${NAME} PRIVATE

@@ -8,3 +8,6 @@
 [submodule "uros_ws/firmware/mcu_ws/rover_drive_interfaces"]
 	path = uros_ws/firmware/mcu_ws/rover_drive_interfaces
 	url = https://github.com/cengaverrover/rover_drive_interfaces.git
+[submodule "lib/etlcpp"]
+	path = lib/etlcpp
+	url = https://github.com/ETLCPP/etl.git
