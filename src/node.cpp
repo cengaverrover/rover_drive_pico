@@ -7,8 +7,8 @@
 #include <etl/array.h>
 
 #include "BTS7960.hpp"
-#include "pinout.hpp"
 #include "encoder_substep.hpp"
+#include "pinout.hpp"
 
 namespace ros {
 
@@ -24,18 +24,22 @@ static rover_drive_interfaces__msg__MotorDrive msgDrive = {
 template <size_t i> void publisherTask(void *arg) {
 
   motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
-  encoder::EncoderSubstep encoder(pio0, i, pinout::encoderA[i]);
+  encoder::EncoderSubstep encoder(pinout::encoderPio, pinout::encoderPioSm[i],
+                                  pinout::encoderA[i]);
 
   rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
   rover_drive_interfaces__msg__MotorFeedback feedbackMsgSent{};
+
   TickType_t startTick{xTaskGetTickCount()};
   while (true) {
     if (xQueuePeek(driveQueue, &driveMsgReceived, 0) == pdTRUE) {
       feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm / 200.0f;
-      feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
+      // feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
       feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
     }
+    feedbackMsgSent.encoder_rpm = encoder.getRpm();
     motor.setSpeed(feedbackMsgSent.dutycycle);
+    
     xQueueOverwrite(publisherQueues[i], &feedbackMsgSent);
     xTaskDelayUntil(&startTick, pdMS_TO_TICKS(50));
   }
