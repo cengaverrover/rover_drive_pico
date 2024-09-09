@@ -6,62 +6,13 @@
 
 #include <etl/array.h>
 
-#include "BTS7960.hpp"
-#include "encoder_substep.hpp"
 #include "parameters.hpp"
-#include "pinout.hpp"
+#include "publisher.hpp"
+#include "queues.hpp"
 
 namespace ros {
 
-static etl::array<rcl_publisher_t, pinout::motorPwmL.size()> publishers{};
-static etl::array<rover_drive_interfaces__msg__MotorFeedback, publishers.size()>
-    msgs{};
-
-static etl::array<rover_drive_interfaces__msg__MotorDrive, publishers.size()>
-    driveMsgs{};
-
-static etl::array<QueueHandle_t, publishers.size()> publisherQueues{};
-static etl::array<QueueHandle_t, publishers.size()> driveQueues{};
-
-template <size_t i> void publisherTask(void *arg) {
-
-  // Create the motor and encoder classes.
-  motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
-  encoder::EncoderSubstep encoder(pinout::encoderPio, pinout::encoderPioSm[i],
-                                  pinout::encoderA[i]);
-
-  // Create the ros messeages.
-  rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
-  rover_drive_interfaces__msg__MotorFeedback feedbackMsgSent{};
-
-  // Get the starting time of the task.
-  TickType_t startTick{xTaskGetTickCount()};
-  while (true) {
-    // If there is a new drive messeage available, receive it.
-    if (xQueuePeek(driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
-      feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm / 200.0f;
-      // feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
-      feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
-    }
-
-    if (feedbackMsgSent.current >= parameter::maxMotorCurrent) {
-      feedbackMsgSent.dutycycle = 0;
-    }
-
-    feedbackMsgSent.encoder_rpm = encoder.getRpm();
-    const float targetRpm =
-        etl::clamp(driveMsgReceived.target_rpm, static_cast<int32_t>(0),
-                   parameter::maxMotorRpm);
-
-    feedbackMsgSent.dutycycle = etl::clamp(
-        feedbackMsgSent.dutycycle, parameter::maxMotorDutyCycleLowerConstraint,
-        parameter::maxMotorDutyCycle);
-    motor.setSpeed(feedbackMsgSent.dutycycle);
-
-    xQueueOverwrite(publisherQueues[i], &feedbackMsgSent);
-    xTaskDelayUntil(&startTick, pdMS_TO_TICKS(parameter::motorPidLoopPeriodMs));
-  }
-}
+static etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
 
 template <size_t i> static void driveSubscriberCallback(const void *msgin) {
   if (msgin != NULL) {
@@ -70,25 +21,8 @@ template <size_t i> static void driveSubscriberCallback(const void *msgin) {
     xQueueOverwrite(driveQueues[i], msg);
   }
 }
-extern "C" {
 
-static void publisherTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
-  // If timer period was changed through parameters, set the new period to the
-  // timer.
-  int64_t lastPeriod{};
-  rcl_ret_t ret = rcl_timer_get_period(timer, &lastPeriod);
-  if (lastPeriod != RCL_MS_TO_NS(parameter::motorFeedbackPeriodMs)) {
-    ret += rcl_timer_exchange_period(
-        timer, RCL_MS_TO_NS(parameter::motorFeedbackPeriodMs), &lastPeriod);
-  }
-  // Receive all the feedback messeages from the queues and publish them.
-  rover_drive_interfaces__msg__MotorFeedback feedbackMsgBuffer{};
-  for (int i = 0; i < publishers.size(); i++) {
-    if (xQueueReceive(publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
-      ret += rcl_publish(&publishers[i], &feedbackMsgBuffer, NULL);
-    }
-  }
-}
+extern "C" {
 
 static void microRosTask(void *arg) {
   vTaskSuspendAll();
@@ -101,21 +35,13 @@ static void microRosTask(void *arg) {
   rcl_node_t node = rcl_get_zero_initialized_node();
   rclc_node_init_default(&node, "pico_node", "drive", &support);
 
-  constexpr etl::array<etl::string_view, 4> publisherNames{
-      "pico_publisher_0", "pico_publisher_1", "pico_publisher_2",
-      "pico_publisher_3"};
+  initPublishers(&node);
+
   constexpr etl::array<etl::string_view, 4> subscriberNames{
       "pico_subscriber_0", "pico_subscriber_1", "pico_subscriber_2",
       "pico_subscriber_3"};
-
   etl::array<rcl_subscription_t, 4> driveSubscribers{};
   for (int i = 0; i < 4; i++) {
-    publishers[i] = rcl_get_zero_initialized_publisher();
-    rclc_publisher_init_default(
-        &publishers[i], &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorFeedback),
-        publisherNames[i].data());
-
     driveSubscribers[i] = rcl_get_zero_initialized_subscription();
     rclc_subscription_init_default(
         &driveSubscribers[i], &node,
@@ -157,18 +83,12 @@ static void microRosTask(void *arg) {
 
   rclc_executor_t paramServerExecutor =
       rclc_executor_get_zero_initialized_executor();
-  rclc_executor_init(&paramServerExecutor, &support.context, RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator);
+  rclc_executor_init(&paramServerExecutor, &support.context,
+                     RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator);
   paramServer.addToExecutor(&paramServerExecutor);
   paramServer.initParameters();
 
-  xTaskCreateAffinitySet(publisherTask<0>, "publisher_task_0", 500, nullptr, 3, 0x03,
-                         nullptr);
-  xTaskCreateAffinitySet(publisherTask<1>, "publisher_task_1", 500, nullptr, 3, 0x03,
-                         nullptr);
-  xTaskCreateAffinitySet(publisherTask<2>, "publisher_task_2", 500, nullptr, 3, 0x03,
-                         nullptr);
-  xTaskCreateAffinitySet(publisherTask<3>, "publisher_task_3", 500, nullptr, 3, 0x03,
-                         nullptr);
+  createPublisherTasks(500, 3, 0x03);
 
   xTaskResumeAll();
   while (true) {
