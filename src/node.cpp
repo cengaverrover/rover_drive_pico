@@ -18,7 +18,7 @@ template <size_t i> static void driveSubscriberCallback(const void *msgin) {
   if (msgin != NULL) {
     auto msg =
         static_cast<const rover_drive_interfaces__msg__MotorDrive *>(msgin);
-    xQueueOverwrite(driveQueues[i], msg);
+    xQueueOverwrite(freertos::driveQueues[i], msg);
   }
 }
 
@@ -35,6 +35,8 @@ static void microRosTask(void *arg) {
   rcl_node_t node = rcl_get_zero_initialized_node();
   rclc_node_init_default(&node, "pico_node", "drive", &support);
 
+  freertos::initQueues();
+
   initPublishers(&node);
 
   constexpr etl::array<etl::string_view, 4> subscriberNames{
@@ -47,12 +49,6 @@ static void microRosTask(void *arg) {
         &driveSubscribers[i], &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive),
         subscriberNames[i].data());
-
-    publisherQueues[i] =
-        xQueueCreate(1, sizeof(rover_drive_interfaces__msg__MotorFeedback));
-
-    driveQueues[i] =
-        xQueueCreate(1, sizeof(rover_drive_interfaces__msg__MotorDrive));
   }
 
   rcl_timer_t publisherTimer = rcl_get_zero_initialized_timer();

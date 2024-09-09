@@ -6,7 +6,12 @@
 
 #include <etl/string_view.h>
 
+namespace freertos {
+
 inline etl::array<QueueHandle_t, 4> publisherQueues{};
 inline etl::array<QueueHandle_t, 4> driveQueues{};
+
+void initQueues();
+} // namespace freertos
 
 #endif // QUEUES_HPP

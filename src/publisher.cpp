@@ -52,7 +52,7 @@ void publisherTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   // Receive all the feedback messeages from the queues and publish them.
   rover_drive_interfaces__msg__MotorFeedback feedbackMsgBuffer{};
   for (int i = 0; i < motorFeedbackPublishers.size(); i++) {
-    if (xQueueReceive(publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
+    if (xQueueReceive(freertos::publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
       ret += rcl_publish(&motorFeedbackPublishers[i], &feedbackMsgBuffer, NULL);
     }
   }
@@ -73,7 +73,7 @@ void publisherTask(void *arg) {
   TickType_t startTick{xTaskGetTickCount()};
   while (true) {
     // If there is a new drive messeage available, receive it.
-    if (xQueuePeek(driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
+    if (xQueuePeek(freertos::driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
       feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm / 200.0f;
       // feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
       feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
@@ -93,7 +93,7 @@ void publisherTask(void *arg) {
         parameter::maxMotorDutyCycle);
     motor.setSpeed(feedbackMsgSent.dutycycle);
 
-    xQueueOverwrite(publisherQueues[i], &feedbackMsgSent);
+    xQueueOverwrite(freertos::publisherQueues[i], &feedbackMsgSent);
     xTaskDelayUntil(&startTick, pdMS_TO_TICKS(parameter::motorPidLoopPeriodMs));
   }
 }
