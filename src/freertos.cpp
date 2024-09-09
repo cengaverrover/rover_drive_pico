@@ -4,9 +4,9 @@
  * @brief Source file of Freertos related functions and tasks.
  * @version 0.1
  * @date 2024-09-09
- * 
+ *
  * @copyright Copyright (c) 2024
- * 
+ *
  */
 
 #include "queues.hpp"
@@ -57,19 +57,27 @@ void motorTask(void *arg) {
 
   float integral = 0.0f;
   float errorRpmPrev = 0.0f;
+
+  absolute_time_t lastMsgReceivedTime = get_absolute_time();
   // Get the starting time of the task.
   TickType_t startTick{xTaskGetTickCount()};
   while (true) {
     // If there is a new drive messeage available, receive it.
-    if (xQueuePeek(freertos::driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
+    if (xQueueReceive(freertos::driveQueues[i], &driveMsgReceived, 0) ==
+        pdTRUE) {
       feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm / 200.0f;
       // feedbackMsgSent.encoder_rpm = driveMsgReceived.target_rpm;
       feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
+      lastMsgReceivedTime = get_absolute_time();
     }
 
     feedbackMsgSent.encoder_rpm = encoder.getRpm();
 
-    if (feedbackMsgSent.current >= ros::parameter::maxMotorCurrent) {
+    auto timeDiffMsg =
+        absolute_time_diff_us(lastMsgReceivedTime, get_absolute_time()) / 1000;
+
+    if (feedbackMsgSent.current >= ros::parameter::maxMotorCurrent ||
+        timeDiffMsg >= ros::parameter::motorTimeoutMs) {
       feedbackMsgSent.dutycycle = 0;
     } else {
       if (ros::parameter::motorPidMode) {
