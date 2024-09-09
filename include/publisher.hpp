@@ -1,10 +1,11 @@
 #ifndef PUBLISHER_HPP
 #define PUBLISHER_HPP
 
-#include <etl/string_view.h>
 #include <rcl/publisher.h>
 #include <rcl/timer.h>
 #include <rover_drive_interfaces/msg/motor_feedback.h>
+
+#include <etl/array.h>
 
 namespace ros {
 

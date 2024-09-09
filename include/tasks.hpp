@@ -1,9 +1,9 @@
 #ifndef TASKS_HPP
 #define TASKS_HPP
 
-#include "FreeRTOSConfig.h"
 #include <FreeRTOS.h>
 #include <task.h>
+#include "FreeRTOSConfig.h"
 #include <pico/types.h>
 
 #include <etl/array.h>

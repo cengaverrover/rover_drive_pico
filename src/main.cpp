@@ -5,13 +5,11 @@
  *      Author: jondurrant
  */
 
-#include <cstdio>
 #include <pico/stdlib.h>
 
 extern "C" {
 
 #include <FreeRTOS.h>
-#include <queue.h>
 #include <task.h>
 
 #include "pico_uart_transports.h"
@@ -21,6 +19,8 @@ extern "C" {
 #include "pinout.hpp"
 #include "queues.hpp"
 #include "tasks.hpp"
+
+#include <cstdio>
 
 int main() {
   rmw_uros_set_custom_transport(
