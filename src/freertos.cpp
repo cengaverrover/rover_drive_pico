@@ -1,3 +1,14 @@
+/**
+ * @file freertos.cpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Source file of Freertos related functions and tasks.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "queues.hpp"
 #include <rover_drive_interfaces/msg/motor_drive.h>
 #include <rover_drive_interfaces/msg/motor_feedback.h>

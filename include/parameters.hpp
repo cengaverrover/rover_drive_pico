@@ -1,3 +1,14 @@
+/**
+ * @file parameters.hpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Header file of MicroROS parameters and server.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 

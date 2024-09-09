@@ -1,8 +1,12 @@
-/*
- * main.cpp
- *
- *  Created on: 9 Feb 2023
- *      Author: jondurrant
+/**
+ * @file main.cpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Starting point of program.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
  */
 
 #include <pico/stdlib.h>

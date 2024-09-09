@@ -1,3 +1,14 @@
+/**
+ * @file tasks.hpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Header file for FreeRTOS tasks.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef TASKS_HPP
 #define TASKS_HPP
 

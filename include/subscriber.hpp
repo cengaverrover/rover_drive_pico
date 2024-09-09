@@ -1,3 +1,14 @@
+/**
+ * @file subscriber.hpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Header file for MicroROS subscriber related functions.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef SUBSCRIBER_HPP
 #define SUBSCRIBER_HPP
 

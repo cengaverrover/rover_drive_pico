@@ -1,3 +1,14 @@
+/**
+ * @file parameter.cpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Source file of MicroROS parameter related functions.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "parameters.hpp"
 #include <etl/string_view.h>
 

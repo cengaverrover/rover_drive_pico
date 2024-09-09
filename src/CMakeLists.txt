@@ -1,5 +1,6 @@
-file(GLOB CXX_SOURCES *.cpp)
-file(GLOB C_SOURCES *.c)
+# Add all the source efiles 
+file(GLOB CXX_SOURCES ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
+file(GLOB C_SOURCES ${CMAKE_CURRENT_LIST_DIR}/*.c)
 
 add_executable(${NAME}
     ${CXX_SOURCES}

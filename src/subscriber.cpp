@@ -1,3 +1,14 @@
+/**
+ * @file subscriber.cpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Source file of MicroRos subscriber related functions and callbacks.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "subscriber.hpp"
 #include <rclc/subscription.h>
 

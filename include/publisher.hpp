@@ -1,3 +1,14 @@
+/**
+ * @file publisher.hpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Header file for MicroROS publisher related functions and callbacks
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef PUBLISHER_HPP
 #define PUBLISHER_HPP
 

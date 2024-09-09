@@ -1,3 +1,14 @@
+/**
+ * @file pinout.hpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief All the pins used by components.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef PINS_HPP
 #define PINS_HPP
 

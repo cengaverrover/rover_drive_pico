@@ -1,3 +1,14 @@
+/**
+ * @file publisher.cpp
+ * @author Alper Tunga Güven (alpert.guven@gmail.com)
+ * @brief Source file of MicroROS publisher related functions and callbacks.
+ * @version 0.1
+ * @date 2024-09-09
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "publisher.hpp"
 
 #include <rclc/publisher.h>
