@@ -15,8 +15,8 @@ namespace ros {
 
 rcl_ret_t initPublishers(rcl_node_t *node) {
   constexpr etl::array<etl::string_view, 4> publisherNames{
-      "pico_publisher_0", "pico_publisher_1", "pico_publisher_2",
-      "pico_publisher_3"};
+      "motor_feedback_front_left", "motor_feedback_back_left",
+      "motor_feedback_front_right", "motor_feedback_back_right"};
   auto msgType =
       ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorFeedback);
   rcl_ret_t ret = 0;
@@ -26,18 +26,6 @@ rcl_ret_t initPublishers(rcl_node_t *node) {
                                        msgType, publisherNames[i].data());
   }
   return ret;
-}
-
-void createPublisherTasks(const uint32_t uxStackDepth, uint32_t uxPriority,
-                          uint32_t uxCoreAffinityMask) {
-  void *indexes[4]{(void *)0, (void *)1, (void *)2, (void *)3};
-  constexpr etl::array<etl::string_view, 4> taskNames{
-      "publisher_task_0", "publisher_task_1", "publisher_task_2",
-      "publisher_task_3"};
-  for (int i = 0; i < motorFeedbackPublishers.size(); i++) {
-    xTaskCreateAffinitySet(publisherTask, taskNames[i].data(), uxStackDepth,
-                           indexes[i], uxPriority, uxCoreAffinityMask, nullptr);
-  }
 }
 
 void publisherTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
@@ -52,13 +40,17 @@ void publisherTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   // Receive all the feedback messeages from the queues and publish them.
   rover_drive_interfaces__msg__MotorFeedback feedbackMsgBuffer{};
   for (int i = 0; i < motorFeedbackPublishers.size(); i++) {
-    if (xQueueReceive(freertos::publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
+    if (xQueueReceive(freertos::publisherQueues[i], &feedbackMsgBuffer, 0) ==
+        pdTRUE) {
       ret += rcl_publish(&motorFeedbackPublishers[i], &feedbackMsgBuffer, NULL);
     }
   }
 }
+} // namespace ros
 
-void publisherTask(void *arg) {
+namespace freertos {
+
+extern "C" void motorTask(void *arg) {
   const size_t i = (size_t)(arg);
   // Create the motor and encoder classes.
   motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
@@ -79,22 +71,36 @@ void publisherTask(void *arg) {
       feedbackMsgSent.current = feedbackMsgSent.dutycycle * 30.0f / 100.0f;
     }
 
-    if (feedbackMsgSent.current >= parameter::maxMotorCurrent) {
+    if (feedbackMsgSent.current >= ros::parameter::maxMotorCurrent) {
       feedbackMsgSent.dutycycle = 0;
     }
 
     feedbackMsgSent.encoder_rpm = encoder.getRpm();
     const float targetRpm =
         etl::clamp(driveMsgReceived.target_rpm, static_cast<int32_t>(0),
-                   parameter::maxMotorRpm);
+                   ros::parameter::maxMotorRpm);
 
-    feedbackMsgSent.dutycycle = etl::clamp(
-        feedbackMsgSent.dutycycle, parameter::maxMotorDutyCycleLowerConstraint,
-        parameter::maxMotorDutyCycle);
+    feedbackMsgSent.dutycycle =
+        etl::clamp(feedbackMsgSent.dutycycle,
+                   ros::parameter::maxMotorDutyCycleLowerConstraint,
+                   ros::parameter::maxMotorDutyCycle);
     motor.setSpeed(feedbackMsgSent.dutycycle);
 
     xQueueOverwrite(freertos::publisherQueues[i], &feedbackMsgSent);
-    xTaskDelayUntil(&startTick, pdMS_TO_TICKS(parameter::motorPidLoopPeriodMs));
+    xTaskDelayUntil(&startTick,
+                    pdMS_TO_TICKS(ros::parameter::motorPidLoopPeriodMs));
   }
 }
-} // namespace ros
+
+void createMotorTasks(uint32_t uxStackDepth, uint32_t uxPriority,
+                          uint32_t uxCoreAffinityMask) {
+  void *indexes[4]{(void *)0, (void *)1, (void *)2, (void *)3};
+  constexpr etl::array<etl::string_view, 4> taskNames{
+      "publisher_task_0", "publisher_task_1", "publisher_task_2",
+      "publisher_task_3"};
+  for (int i = 0; i < ros::motorFeedbackPublishers.size(); i++) {
+    xTaskCreateAffinitySet(motorTask, taskNames[i].data(), uxStackDepth,
+                           indexes[i], uxPriority, uxCoreAffinityMask, nullptr);
+  }
+}
+} // namespace freertos

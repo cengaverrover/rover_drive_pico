@@ -10,6 +10,10 @@
 #include "publisher.hpp"
 #include "queues.hpp"
 
+namespace freertos {
+extern "C" void microRosTask(void *arg);
+}
+
 namespace ros {
 
 static etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
@@ -22,9 +26,16 @@ template <size_t i> static void driveSubscriberCallback(const void *msgin) {
   }
 }
 
-extern "C" {
+void Node::spin() {
+  xTaskCreateAffinitySet(freertos::microRosTask, "executor_task", 4000, nullptr, 4, 0x01,
+                         nullptr);
+  vTaskStartScheduler();
+}
 
-static void microRosTask(void *arg) {
+} // namespace ros
+
+namespace freertos {
+void microRosTask(void *arg) {
   vTaskSuspendAll();
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -37,7 +48,7 @@ static void microRosTask(void *arg) {
 
   freertos::initQueues();
 
-  initPublishers(&node);
+  ros::initPublishers(&node);
 
   constexpr etl::array<etl::string_view, 4> subscriberNames{
       "pico_subscriber_0", "pico_subscriber_1", "pico_subscriber_2",
@@ -54,7 +65,7 @@ static void microRosTask(void *arg) {
   rcl_timer_t publisherTimer = rcl_get_zero_initialized_timer();
   publisherTimer = rcl_get_zero_initialized_timer();
   rclc_timer_init_default(&publisherTimer, &support, RCL_MS_TO_NS(100),
-                          publisherTimerCallback);
+                          ros::publisherTimerCallback);
 
   rclc_parameter_options_t paramServerOptions{};
   paramServerOptions = {.notify_changed_over_dds = true,
@@ -62,19 +73,19 @@ static void microRosTask(void *arg) {
                         .allow_undeclared_parameters = true,
                         .low_mem_mode = false};
 
-  parameter::Server paramServer(&node, &paramServerOptions);
+  ros::parameter::Server paramServer(&node, &paramServerOptions);
 
   rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
   rclc_executor_init(&executor, &support.context, 5, &allocator);
 
-  rclc_executor_add_subscription(&executor, &driveSubscribers[0], &driveMsgs[0],
-                                 driveSubscriberCallback<0>, ON_NEW_DATA);
-  rclc_executor_add_subscription(&executor, &driveSubscribers[1], &driveMsgs[1],
-                                 driveSubscriberCallback<1>, ON_NEW_DATA);
-  rclc_executor_add_subscription(&executor, &driveSubscribers[2], &driveMsgs[2],
-                                 driveSubscriberCallback<2>, ON_NEW_DATA);
-  rclc_executor_add_subscription(&executor, &driveSubscribers[3], &driveMsgs[3],
-                                 driveSubscriberCallback<3>, ON_NEW_DATA);
+  rclc_executor_add_subscription(&executor, &driveSubscribers[0], &ros::driveMsgs[0],
+                                 ros::driveSubscriberCallback<0>, ON_NEW_DATA);
+  rclc_executor_add_subscription(&executor, &driveSubscribers[1], &ros::driveMsgs[1],
+                                 ros::driveSubscriberCallback<1>, ON_NEW_DATA);
+  rclc_executor_add_subscription(&executor, &driveSubscribers[2], &ros::driveMsgs[2],
+                                 ros::driveSubscriberCallback<2>, ON_NEW_DATA);
+  rclc_executor_add_subscription(&executor, &driveSubscribers[3], &ros::driveMsgs[3],
+                                 ros::driveSubscriberCallback<3>, ON_NEW_DATA);
   rclc_executor_add_timer(&executor, &publisherTimer);
 
   rclc_executor_t paramServerExecutor =
@@ -84,7 +95,7 @@ static void microRosTask(void *arg) {
   paramServer.addToExecutor(&paramServerExecutor);
   paramServer.initParameters();
 
-  createPublisherTasks(500, 3, 0x03);
+  freertos::createMotorTasks(500, 3, 0x03);
 
   xTaskResumeAll();
   while (true) {
@@ -95,12 +106,4 @@ static void microRosTask(void *arg) {
     vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
-}
-
-void Node::spin() {
-  xTaskCreateAffinitySet(microRosTask, "executor_task", 4000, nullptr, 4, 0x01,
-                         nullptr);
-  vTaskStartScheduler();
-}
-
-} // namespace ros
+} // namespace freertos
