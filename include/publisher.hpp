@@ -15,13 +15,8 @@ inline etl::array<rover_drive_interfaces__msg__MotorFeedback, 4>
 extern "C" void publisherTimerCallback(rcl_timer_t *timer,
                                        int64_t last_call_time);
 
-rcl_ret_t initPublishers(rcl_node_t *node);
+rcl_ret_t createMotorFeedbackPublishers(rcl_node_t *node);
 
 } // namespace ros
 
-namespace freertos {
-
-void createMotorTasks(uint32_t uxStackDepth, uint32_t uxPriority,
-                          uint32_t uxCoreAffinityMask);
-}
 #endif // PUBLISHER_HPP

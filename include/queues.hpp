@@ -11,7 +11,7 @@ namespace freertos {
 inline etl::array<QueueHandle_t, 4> publisherQueues{};
 inline etl::array<QueueHandle_t, 4> driveQueues{};
 
-void initQueues();
+void createMsgQueues();
 } // namespace freertos
 
 #endif // QUEUES_HPP

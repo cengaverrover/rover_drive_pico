@@ -2,7 +2,6 @@
 #define PINS_HPP
 
 #include <etl/array.h>
-#include <pico/types.h>
 #include <hardware/pio.h>
 namespace pinout {
 

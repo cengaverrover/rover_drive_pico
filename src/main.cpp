@@ -5,8 +5,8 @@
  *      Author: jondurrant
  */
 
-#include <pico/stdlib.h>
 #include <cstdio>
+#include <pico/stdlib.h>
 
 extern "C" {
 
@@ -18,8 +18,9 @@ extern "C" {
 #include <rmw_microros/rmw_microros.h>
 }
 
-#include "node.hpp"
 #include "pinout.hpp"
+#include "queues.hpp"
+#include "tasks.hpp"
 
 int main() {
   rmw_uros_set_custom_transport(
@@ -38,8 +39,13 @@ int main() {
 
   gpio_put(pinout::led, true);
 
-  ros::Node node{};
-  node.spin();
+
+  freertos::createMsgQueues();
+  xTaskCreateAffinitySet(freertos::microRosTask, "micro_ros_task", 4000,
+                         nullptr, 4, 0x01, &freertos::microRosTaskHandle);
+  vTaskStartScheduler();
+  // ros::Node node{};
+  // node.spin();
 
   return 0;
 }

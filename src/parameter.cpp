@@ -24,13 +24,22 @@ constexpr static rclc_parameter_type_t motorPidLoopPeriodMsType =
 constexpr static etl::string_view motorTimeoutMsName{"motor_timeout_ms"};
 constexpr static rclc_parameter_type_t motorTimeoutMsType = RCLC_PARAMETER_INT;
 
-constexpr static etl::string_view motorPidModeName{"motor_pid_mode"};
-constexpr static rclc_parameter_type_t motorPidModeType = RCLC_PARAMETER_BOOL;
-
 constexpr static etl::string_view motorFeedbackPeriodMsName{
     "motor_feedback_period_ms"};
 constexpr static rclc_parameter_type_t motorFeedbackPeriodMsType =
     RCLC_PARAMETER_INT;
+
+constexpr static etl::string_view motorPidModeName{"motor_pid_mode"};
+constexpr static rclc_parameter_type_t motorPidModeType = RCLC_PARAMETER_BOOL;
+
+constexpr static etl::string_view motorPidKpName{"motor_pid_kp"};
+constexpr static rclc_parameter_type_t motorPidKpType = RCLC_PARAMETER_DOUBLE;
+
+constexpr static etl::string_view motorPidKiName{"motor_pid_ki"};
+constexpr static rclc_parameter_type_t motorPidKiType = RCLC_PARAMETER_DOUBLE;
+
+constexpr static etl::string_view motorPidKdName{"motor_pid_kd"};
+constexpr static rclc_parameter_type_t motorPidKdType = RCLC_PARAMETER_DOUBLE;
 
 extern "C" bool onParameterChange(const Parameter *oldParam,
                                   const Parameter *newParam, void *context);
@@ -41,7 +50,17 @@ Server::Server(rcl_node_t *node, rclc_parameter_options_t *serverOptions) {
   } else {
     rclc_parameter_server_init_with_option(&paramServer_, node, serverOptions);
   }
-  // rclc_executor_add_parameter_server(executor, &paramServer_, nullptr);
+}
+
+Server::Server(rcl_node_t *node, bool notify_changed_over_dds,
+               uint32_t max_params, bool allow_undeclared_parameters,
+               bool low_mem_mode) {
+  rclc_parameter_options_t options{
+      .notify_changed_over_dds = notify_changed_over_dds,
+      .max_params = max_params,
+      .allow_undeclared_parameters = allow_undeclared_parameters,
+      .low_mem_mode = low_mem_mode};
+  rclc_parameter_server_init_with_option(&paramServer_, node, &options);
 }
 
 rcl_ret_t Server::addToExecutor(rclc_executor_t *executor) {
@@ -66,10 +85,17 @@ rcl_ret_t Server::initParameters() {
                             motorPidLoopPeriodMsType);
   ret += rclc_add_parameter(&paramServer_, motorTimeoutMsName.data(),
                             motorTimeoutMsType);
-  ret += rclc_add_parameter(&paramServer_, motorPidModeName.data(),
-                            motorPidModeType);
   ret += rclc_add_parameter(&paramServer_, motorFeedbackPeriodMsName.data(),
                             motorFeedbackPeriodMsType);
+  ret += rclc_add_parameter(&paramServer_, motorPidModeName.data(),
+                            motorPidModeType);
+
+  ret +=
+      rclc_add_parameter(&paramServer_, motorPidKpName.data(), motorPidKpType);
+  ret +=
+      rclc_add_parameter(&paramServer_, motorPidKdName.data(), motorPidKiType);
+  ret +=
+      rclc_add_parameter(&paramServer_, motorPidKiName.data(), motorPidKdType);
 
   // Set the values of the parameters in &paramServer_.
   ret += rclc_parameter_set_int(&paramServer_, maxMotorRpmName.data(),
@@ -82,10 +108,16 @@ rcl_ret_t Server::initParameters() {
                                 motorPidLoopPeriodMs);
   ret += rclc_parameter_set_int(&paramServer_, motorTimeoutMsName.data(),
                                 motorTimeoutMs);
-  ret += rclc_parameter_set_bool(&paramServer_, motorPidModeName.data(),
-                                 motorPidMode);
   ret += rclc_parameter_set_int(&paramServer_, motorFeedbackPeriodMsName.data(),
                                 motorFeedbackPeriodMs);
+  ret += rclc_parameter_set_bool(&paramServer_, motorPidModeName.data(),
+                                 motorPidMode);
+  ret += rclc_parameter_set_double(&paramServer_, motorPidKpName.data(),
+                                   motorPidKp);
+  ret += rclc_parameter_set_double(&paramServer_, motorPidKiName.data(),
+                                   motorPidKi);
+  ret += rclc_parameter_set_double(&paramServer_, motorPidKdName.data(),
+                                   motorPidKd);
   return ret;
 }
 
@@ -96,6 +128,7 @@ bool onParameterChange(const Parameter *oldParam, const Parameter *newParam,
     return false;
   }
 
+  // TODO convert this to a hashmap
   switch (newParam->value.type) {
   case RCLC_PARAMETER_INT:
     if (maxMotorRpmName == newParam->name.data) {
@@ -115,6 +148,12 @@ bool onParameterChange(const Parameter *oldParam, const Parameter *newParam,
       maxMotorDutyCycle = newParam->value.double_value;
     } else if (maxMotorCurrentName == newParam->name.data) {
       maxMotorCurrent = newParam->value.double_value;
+    } else if (motorPidKpName == newParam->name.data) {
+      motorPidKp = newParam->value.double_value;
+    } else if (motorPidKiName == newParam->name.data) {
+      motorPidKi = newParam->value.double_value;
+    } else if (motorPidKdName == newParam->name.data) {
+      motorPidKd = newParam->value.double_value;
     } else {
       return false;
     }
