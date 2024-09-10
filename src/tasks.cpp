@@ -54,35 +54,35 @@ void motorTask(void* arg) {
         auto timeDiffMsg = absolute_time_diff_us(lastMsgReceivedTime, get_absolute_time()) / 1000;
 
         // If the motor current is over the maximum value or the timeout has been
-        // reached, turn the motors off.
+        // reached, set the target RPM to 0 to turn the motors off.
         if (feedbackMsgSent.current >= ros::parameter::maxMotorCurrent ||
             timeDiffMsg >= ros::parameter::motorTimeoutMs) {
-            feedbackMsgSent.dutycycle = 0;
-        } else {
-            // If PID mode is open calculate the PID values.
-            if (ros::parameter::motorPidMode) {
-                const int32_t errorRpm = driveMsgReceived.target_rpm - feedbackMsgSent.encoder_rpm;
-
-                const float proportional = errorRpm * ros::parameter::motorPidKd;
-                integral += errorRpm * ros::parameter::motorPidKi;
-                integral = etl::clamp(integral, -ros::parameter::maxMotorDutyCycle,
-                    ros::parameter::maxMotorDutyCycle);
-                const float derivative = ros::parameter::motorPidKd * (errorRpm - errorRpmPrev) *
-                                         ros::parameter::motorPidLoopPeriodMs / 1000.0f;
-
-                feedbackMsgSent.dutycycle = proportional + integral + derivative;
-            } else {
-                // If PID mode is off, assume there is a linear relationship between the
-                // motor dutycyle and RPM and use open loop control.
-                feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm *
-                                            ros::parameter::maxMotorDutyCycleUpperConstraint /
-                                            ros::parameter::maxMotorRpm;
-            }
-            // Clamp the dutycycle within the boundaries.
-            feedbackMsgSent.dutycycle = etl::clamp(feedbackMsgSent.dutycycle,
-                -ros::parameter::maxMotorDutyCycle,
-                ros::parameter::maxMotorDutyCycle);
+            driveMsgReceived.target_rpm = 0;
         }
+        // If PID mode is open calculate the PID values.
+        if (ros::parameter::motorPidMode) {
+            const int32_t errorRpm = driveMsgReceived.target_rpm - feedbackMsgSent.encoder_rpm;
+
+            const float proportional = errorRpm * ros::parameter::motorPidKd;
+            integral += errorRpm * ros::parameter::motorPidKi;
+            integral = etl::clamp(
+                integral, -ros::parameter::maxMotorDutyCycle, ros::parameter::maxMotorDutyCycle);
+            const float derivative = ros::parameter::motorPidKd * (errorRpm - errorRpmPrev) *
+                                     ros::parameter::motorPidLoopPeriodMs / 1000.0f;
+
+            feedbackMsgSent.dutycycle = proportional + integral + derivative;
+        } else {
+            // If PID mode is off, assume there is a linear relationship between the
+            // motor dutycyle and RPM and use open loop control.
+            feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm *
+                                        ros::parameter::maxMotorDutyCycleUpperConstraint /
+                                        ros::parameter::maxMotorRpm;
+        }
+        // Clamp the dutycycle within the boundaries.
+        feedbackMsgSent.dutycycle = etl::clamp(feedbackMsgSent.dutycycle,
+            -ros::parameter::maxMotorDutyCycle,
+            ros::parameter::maxMotorDutyCycle);
+
         // Set the dutycyle of the motors.
         motor.setSpeed(feedbackMsgSent.dutycycle);
         // Send the feedback messeage to the queue
