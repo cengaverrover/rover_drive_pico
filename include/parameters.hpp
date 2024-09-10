@@ -47,7 +47,7 @@ inline int32_t motorTimeoutMs = 1000;
 
 inline int32_t motorFeedbackPeriodMs = 100;
 
-inline bool motorPidMode = true;
+inline bool motorPidMode = false;
 
 inline float motorPidKp = maxMotorRpm / maxMotorDutyCycle;
 
