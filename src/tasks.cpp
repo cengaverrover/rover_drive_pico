@@ -41,10 +41,6 @@ void motorTask(void* arg) {
         // lastMsgReceivedTime variable. Otherwise, don't wait for new data and
         // continue.
         if (xQueueReceive(freertos::queue::driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
-            // Imaginary current value to test current limiting property since we do
-            // not have a current sensor yet.
-            feedbackMsgSent.current =
-                (feedbackMsgSent.dutycycle - 5.0f) * ros::parameter::maxMotorCurrent / 100.0f;
             lastMsgReceivedTime = get_absolute_time();
         }
 
@@ -82,6 +78,11 @@ void motorTask(void* arg) {
         feedbackMsgSent.dutycycle = etl::clamp(feedbackMsgSent.dutycycle,
             -ros::parameter::maxMotorDutyCycle,
             ros::parameter::maxMotorDutyCycle);
+    
+        // Imaginary current value to test current limiting property since we do
+        // not have a current sensor yet.
+        feedbackMsgSent.current =
+            (feedbackMsgSent.dutycycle) * (ros::parameter::maxMotorCurrent - 5.0f) / 100.0f;
 
         // Set the dutycyle of the motors.
         motor.setSpeed(feedbackMsgSent.dutycycle);
