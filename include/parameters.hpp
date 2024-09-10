@@ -21,22 +21,21 @@ namespace parameter {
 
 class Server {
 public:
-  Server(rcl_node_t *node, rclc_parameter_options_t *serverOptions = nullptr);
+    Server(rcl_node_t* node, rclc_parameter_options_t* serverOptions = nullptr);
 
-  Server(rcl_node_t *node, bool notify_changed_over_dds,
-         uint32_t max_params, bool allow_undeclared_parameters,
-         bool low_mem_mode);
+    Server(rcl_node_t* node, bool notify_changed_over_dds, uint32_t max_params,
+        bool allow_undeclared_parameters, bool low_mem_mode);
 
-  rcl_ret_t addToExecutor(rclc_executor_t *executor);
-  rcl_ret_t initParameters();
+    rcl_ret_t addToExecutor(rclc_executor_t* executor);
+    rcl_ret_t initParameters();
 
 private:
-  rclc_parameter_server_t paramServer_{};
+    rclc_parameter_server_t paramServer_ {};
 };
 
 inline int32_t maxMotorRpm = 20000;
 
-inline float maxMotorDutyCycle = 100.0f;
+inline float           maxMotorDutyCycle = 100.0f;
 constexpr inline float maxMotorDutyCycleUpperConstraint = 100.0f;
 constexpr inline float maxMotorDutyCycleLowerConstraint = 0.0f;
 

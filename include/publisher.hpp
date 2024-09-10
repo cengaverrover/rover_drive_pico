@@ -21,13 +21,11 @@
 namespace ros {
 
 inline etl::array<rcl_publisher_t, 4> motorFeedbackPublishers{};
-inline etl::array<rover_drive_interfaces__msg__MotorFeedback, 4>
-    motorFeedbackMsgs{};
+inline etl::array<rover_drive_interfaces__msg__MotorFeedback, 4> motorFeedbackMsgs{};
 
-extern "C" void publisherTimerCallback(rcl_timer_t *timer,
-                                       int64_t last_call_time);
+extern "C" void publisherTimerCallback(rcl_timer_t* timer, int64_t last_call_time);
 
-rcl_ret_t createMotorFeedbackPublishers(rcl_node_t *node);
+rcl_ret_t createMotorFeedbackPublishers(rcl_node_t* node);
 
 } // namespace ros
 

@@ -22,20 +22,18 @@ namespace ros {
 
 inline etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
 
-extern "C" void driveSubscriberCallback(const void *msgin, void *context);
+extern "C" void driveSubscriberCallback(const void* msgin, void* context);
 
 class Subscriber {
 public:
-  Subscriber(rcl_node_t *node, etl::string_view name,
-             const rosidl_message_type_support_t *type);
+    Subscriber(rcl_node_t* node, etl::string_view name, const rosidl_message_type_support_t* type);
 
-  rcl_ret_t addToExecutor(rclc_executor_t *executor, void *msg,
-                          rclc_subscription_callback_with_context_t callback,
-                          void *context,
-                          rclc_executor_handle_invocation_t event);
+    rcl_ret_t addToExecutor(rclc_executor_t* executor, void* msg,
+        rclc_subscription_callback_with_context_t callback, void* context,
+        rclc_executor_handle_invocation_t event);
 
 private:
-  rcl_subscription_t subscriber_{};
+    rcl_subscription_t subscriber_{};
 };
 } // namespace ros
 
