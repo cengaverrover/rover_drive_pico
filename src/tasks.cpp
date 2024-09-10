@@ -1,13 +1,15 @@
-#include "freertos.hpp"
 #include "tasks.hpp"
-#include "queues.hpp"
+#include "freertos.hpp"
 #include "parameters.hpp"
 #include "publisher.hpp"
+#include "queues.hpp"
 #include "subscriber.hpp"
 
 #include "BTS7960.hpp"
 #include "encoder_substep.hpp"
 #include "pinout.hpp"
+
+#include <hardware/watchdog.h>
 
 namespace freertos {
 
@@ -162,11 +164,18 @@ void microRosTask(void *arg) {
   freertos::createMotorTasks();
   // Resume the scheduler since the initialization is complete.
   xTaskResumeAll();
+  // Set the watchdog timer that will reset microcontroller if it is not updated
+  // within set time period.
+  watchdog_enable(ros::parameter::motorFeedbackPeriodMs * 10, true);
   while (true) {
     // Spin the executors to check if there are new subscriber messeages or
     // parameter server requests.
-    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
-    rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(1));
+    const auto executorResult =
+        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
+    const auto paramExecutorResult =
+        rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(1));
+    // Update the watchdog
+    watchdog_update();
     // Delay the tasks to free the core for other tasks.
     // TODO add parameter to control executor period.
     vTaskDelay(pdMS_TO_TICKS(50));
