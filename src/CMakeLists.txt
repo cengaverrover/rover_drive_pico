@@ -10,6 +10,7 @@ add_executable(${NAME}
 # Pull in our pico_stdlib which pulls in commonly used features
 target_link_libraries(${NAME} 
     pico_stdlib
+    hardware_watchdog
     micro_ros
     FreeRTOS-Kernel-Static
     FreeRTOS-Kernel-Heap4 

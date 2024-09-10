@@ -4,9 +4,9 @@
  * @brief Header file for FreeRTOS tasks.
  * @version 0.1
  * @date 2024-09-09
- * 
+ *
  * @copyright Copyright (c) 2024
- * 
+ *
  */
 
 #ifndef TASKS_HPP
@@ -14,23 +14,19 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
-#include "FreeRTOSConfig.h"
-#include <pico/types.h>
 
 #include <etl/array.h>
 
 namespace freertos {
+namespace task {
 
-void createMotorTasks(uint32_t uxStackDepth = 500,
-                      uint32_t uxPriority = configMAX_PRIORITIES / 2,
-                      uint32_t uxCoreAffinityMask = 0x03);
-
-inline TaskHandle_t microRosTaskHandle= nullptr;
+inline TaskHandle_t microRosTaskHandle = nullptr;
 extern "C" void microRosTask(void *arg);
 
 inline etl::array<TaskHandle_t, 4> motorTaskHandles{};
 extern "C" void motorTask(void *arg);
 
+} // namespace task
 } // namespace freertos
 
 #endif // TASKS_HPP
