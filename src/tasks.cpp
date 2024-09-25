@@ -3,6 +3,7 @@
 #include "parameters.hpp"
 #include "publisher.hpp"
 #include "queues.hpp"
+#include "rmw_microros/ping.h"
 #include "subscriber.hpp"
 
 #include "BTS7960.hpp"
@@ -90,22 +91,36 @@ template <uint i> void motorTask(void* arg) {
     }
 }
 
-void microRosTask(void* arg) {
-    // Suspend the FreeRTOS scheduler since the MicroROS initialization is not
-    // thread safe.
+#define RCCHECK(x)                                                                                 \
+    do {                                                                                           \
+        if (x == RCL_RET_OK) {                                                                     \
+            watchdog_update();                                                                     \
+        } else {                                                                                   \
+            while (true) {                                                                         \
+                tight_loop_contents();                                                             \
+            }                                                                                      \
+        }                                                                                          \
+    } while (0)
 
+void microRosTask(void* arg) {
     // MicroRos boiler plate.
     rcl_allocator_t allocator = rcl_get_default_allocator();
 
     rclc_support_t support{};
-    rclc_support_init(&support, 0, NULL, &allocator);
-    sleep_ms(100);
+    while (rclc_support_init(&support, 0, nullptr, &allocator) != RCL_RET_OK) {
+        rmw_uros_ping_agent(200, 1);
+    }
+    watchdog_enable(1000, true);
+    // Set the onboard pin to high to indicate succesfull connection.
+    gpio_put(pinout::led, true);
+
+    sleep_ms(10);
 
     rcl_node_t node = rcl_get_zero_initialized_node();
-    rclc_node_init_default(&node, "pico_node", "drive", &support);
+    RCCHECK(rclc_node_init_default(&node, "pico_node", "drive", &support));
 
     // Create the MicroROS motor feedback publishers
-    ros::createMotorFeedbackPublishers(&node);
+    RCCHECK(ros::createMotorFeedbackPublishers(&node));
     sleep_ms(10);
 
     // Create the MicroROS motor drive subscribers.
@@ -125,19 +140,19 @@ void microRosTask(void* arg) {
     // different cores at the same time.
     rcl_timer_t publisherTimer = rcl_get_zero_initialized_timer();
     publisherTimer = rcl_get_zero_initialized_timer();
-    rclc_timer_init_default(&publisherTimer, &support,
-        RCL_MS_TO_NS(ros::parameter::motorFeedbackPeriodMs), ros::publisherTimerCallback);
+    RCCHECK(rclc_timer_init_default(&publisherTimer, &support,
+        RCL_MS_TO_NS(ros::parameter::motorFeedbackPeriodMs), ros::publisherTimerCallback));
     sleep_ms(10);
 
     // Create the executor responsible for all the subscribers and the timer.
     rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
-    rclc_executor_init(&executor, &support.context, 5, &allocator);
+    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
     // Add the subscribers and the timer to the executor.
     for (int i = 0; i < driveSubscribers.size(); i++) {
-        driveSubscribers[i].addToExecutor(&executor, &ros::driveMsgs[i],
-            ros::driveSubscriberCallback, queue::driveQueues[i], ON_NEW_DATA);
+        RCCHECK(driveSubscribers[i].addToExecutor(&executor, &ros::driveMsgs[i],
+            ros::driveSubscriberCallback, queue::driveQueues[i], ON_NEW_DATA));
     }
-    rclc_executor_add_timer(&executor, &publisherTimer);
+    RCCHECK(rclc_executor_add_timer(&executor, &publisherTimer));
     sleep_ms(10);
 
     // Create the parameter server and a seperate executor for the parameter
@@ -146,16 +161,15 @@ void microRosTask(void* arg) {
     // executor handle.
     ros::parameter::Server paramServer(&node, true, 10, false, true);
     rclc_executor_t paramServerExecutor = rclc_executor_get_zero_initialized_executor();
-    rclc_executor_init(
-        &paramServerExecutor, &support.context, RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator);
-    paramServer.addToExecutor(&paramServerExecutor);
-    paramServer.initParameters();
+    RCCHECK(rclc_executor_init(&paramServerExecutor, &support.context,
+        RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator));
+    RCCHECK(paramServer.addToExecutor(&paramServerExecutor));
+    RCCHECK(paramServer.initParameters());
     sleep_ms(10);
 
     // Create the FreeRTOS motor tasks that will run on both cores.
     // Set the watchdog timer that will reset microcontroller if it is not updated
     // within set time period.
-    watchdog_enable(ros::parameter::motorFeedbackPeriodMs * 10, true);
     while (true) {
         // Update the watchdog
         watchdog_update();

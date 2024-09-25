@@ -10,6 +10,7 @@
  */
 
 #include <pico/stdlib.h>
+#include <hardware/watchdog.h>
 
 extern "C" {
 
@@ -25,7 +26,6 @@ extern "C" {
 #include <cstdio>
 
 int main() {
-
     // Set the custom transport functions that MicroROS is going to use.
     rmw_uros_set_custom_transport(true, NULL, pico_serial_transport_open,
         pico_serial_transport_close, pico_serial_transport_write, pico_serial_transport_read);
@@ -33,16 +33,6 @@ int main() {
     // Setup the onboard led.
     gpio_init(pinout::led);
     gpio_set_dir(pinout::led, GPIO_OUT);
-
-    // Wait connection to the MicroROS agent.
-    constexpr int timeout_ms = 1000;
-    constexpr uint8_t attempts = 120;
-    while (rmw_uros_ping_agent(timeout_ms, attempts)) {
-        tight_loop_contents();
-    }
-    // Set the onboard pin to high to indicate succesfull connection.
-    gpio_put(pinout::led, true);
-    sleep_ms(100);
 
     // Setup all the FreeRTOS queues that will transfer data across tasks in a
     // thread safe manner.

@@ -18,7 +18,7 @@ bool pico_serial_transport_open(struct uxrCustomTransport* transport) {
     static bool require_init = true;
     if (require_init) {
         stdio_init_all();
-        sleep_ms(100);
+        sleep_ms(10);
         require_init = false;
     }
 
