@@ -11,6 +11,7 @@
 
 #include "parameters.hpp"
 #include <etl/string_view.h>
+#include <etl/unordered_map.h>
 
 namespace ros {
 
@@ -48,6 +49,20 @@ constexpr static rclc_parameter_type_t motorPidKiType = RCLC_PARAMETER_DOUBLE;
 
 constexpr static etl::string_view motorPidKdName{ "motor_pid_kd" };
 constexpr static rclc_parameter_type_t motorPidKdType = RCLC_PARAMETER_DOUBLE;
+
+static etl::unordered_map<etl::string_view, void*, 11> parameters{
+    {maxMotorRpmName,            &maxMotorRpm          },
+    { maxMotorDutyCycleName,     &maxMotorDutyCycle    },
+    { maxMotorCurrentName,       &maxMotorCurrent      },
+    { motorPidLoopPeriodMsName,  &motorPidLoopPeriodMs },
+    { executorSpinPeriodMsName,  &executorSpinPeriodMs },
+    { motorTimeoutMsName,        &motorTimeoutMs       },
+    { motorFeedbackPeriodMsName, &motorFeedbackPeriodMs},
+    { motorPidModeName,          &motorPidMode         },
+    { motorPidKpName,            &motorPidKp           },
+    { motorPidKiName,            &motorPidKi           },
+    { motorPidKdName,            &motorPidKd           },
+};
 
 extern "C" bool onParameterChange(
     const Parameter* oldParam, const Parameter* newParam, void* context);
@@ -121,50 +136,23 @@ bool onParameterChange(const Parameter* oldParam, const Parameter* newParam, voi
         return false;
     }
 
-    // TODO convert this to a hashmap
-    switch (newParam->value.type) {
-        case RCLC_PARAMETER_INT:
-            if (maxMotorRpmName == newParam->name.data) {
-                maxMotorRpm = newParam->value.integer_value;
-            } else if (motorPidLoopPeriodMsName == newParam->name.data) {
-                motorPidLoopPeriodMs = newParam->value.integer_value;
-            } else if (motorFeedbackPeriodMsName == newParam->name.data) {
-                motorFeedbackPeriodMs = newParam->value.integer_value;
-            } else if (executorSpinPeriodMsName == newParam->name.data) {
-                executorSpinPeriodMs = newParam->value.integer_value;
-            } else if (motorTimeoutMsName == newParam->name.data) {
-                motorTimeoutMs = newParam->value.integer_value;
-            } else {
-                return false;
-            }
-            break;
-        case RCLC_PARAMETER_DOUBLE:
-            if (maxMotorDutyCycleName == newParam->name.data) {
-                maxMotorDutyCycle = newParam->value.double_value;
-            } else if (maxMotorCurrentName == newParam->name.data) {
-                maxMotorCurrent = newParam->value.double_value;
-            } else if (motorPidKpName == newParam->name.data) {
-                motorPidKp = newParam->value.double_value;
-            } else if (motorPidKiName == newParam->name.data) {
-                motorPidKi = newParam->value.double_value;
-            } else if (motorPidKdName == newParam->name.data) {
-                motorPidKd = newParam->value.double_value;
-            } else {
-                return false;
-            }
-            break;
-        case RCLC_PARAMETER_BOOL:
-            if (motorPidModeName == newParam->name.data) {
-                motorPidMode = newParam->value.bool_value;
-            } else {
-                return false;
-            }
-            break;
-        default:
-            return false;
+    void* const param = parameters[newParam->name.data];
+    if (param != nullptr) {
+        // Amazing typesafety...
+        switch (newParam->value.type) {
+            case RCLC_PARAMETER_INT:
+                *static_cast<int32_t*>(param) = newParam->value.integer_value;
+                break;
+            case RCLC_PARAMETER_DOUBLE:
+                *static_cast<float*>(param) = newParam->value.double_value;
+                break;
+            case RCLC_PARAMETER_BOOL:
+                *static_cast<bool*>(param) = newParam->value.bool_value;
+                break;
+        }
+        return true;
     }
-
-    return true;
+    return false;
 }
 
 } // namespace parameter
