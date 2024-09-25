@@ -159,7 +159,8 @@ void microRosTask(void* arg) {
     // server.
     // We need the second executor since we have more handles than the maximum
     // executor handle.
-    ros::parameter::Server paramServer(&node, true, 10, false, true);
+    constexpr int paramCount = 11;
+    ros::parameter::Server paramServer(&node, true, paramCount, false, false);
     rclc_executor_t paramServerExecutor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&paramServerExecutor, &support.context,
         RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator));
@@ -180,25 +181,26 @@ void microRosTask(void* arg) {
             rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(1));
         // Delay the tasks to free the core for other tasks.
         // TODO add parameter to control executor period.
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(ros::parameter::executorSpinPeriodMs));
     }
 }
 } // namespace task
 
 static constexpr etl::array taskFunctions{ task::motorTask<0>, task::motorTask<1>,
     task::motorTask<2>, task::motorTask<3> };
-
 static etl::array<StaticTask_t, 4> motorTaskBuffer{};
-static constexpr uint32_t motorTaskStackSize = 256;
+static constexpr uint32_t motorTaskStackSize = 500;
+static constexpr etl::array<void*, 4> motorTaskParameters{};
 static etl::array<etl::array<StackType_t, motorTaskStackSize>, 4> motorTaskStack{};
 static constexpr uint32_t motorTaskPriority = configMAX_PRIORITIES - 3;
 static constexpr uint32_t motorTaskCoreAffinity = 0x03;
-constexpr etl::array taskNames{ "motor_task_0", "motor_task_1", "motor_task_2", "motor_task_3" };
+static constexpr etl::array taskNames{ "motor_task_0", "motor_task_1", "motor_task_2",
+    "motor_task_3" };
 
 void createMotorTasks() {
     for (int i = 0; i < 4; i++) {
         task::motorTaskHandles[i] = xTaskCreateStaticAffinitySet(taskFunctions[i], taskNames[i],
-            motorTaskStackSize, nullptr, motorTaskPriority, motorTaskStack[i].data(),
+            motorTaskStackSize, motorTaskParameters[i], motorTaskPriority, motorTaskStack[i].data(),
             &motorTaskBuffer[i], motorTaskCoreAffinity);
     }
 }

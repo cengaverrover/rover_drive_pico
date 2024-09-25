@@ -44,7 +44,7 @@ void createMsgQueues() {
 }
 
 static StaticTask_t microRosTaskBuffer{};
-static constexpr uint32_t microRosTaskStackSize = 3500;
+static constexpr uint32_t microRosTaskStackSize = 4000;
 static StackType_t microRosTaskStack[microRosTaskStackSize]{};
 static constexpr uint32_t microRosTaskPriority = configMAX_PRIORITIES - 2;
 static constexpr uint32_t microRosTaskCoreAffinity = 0x01;

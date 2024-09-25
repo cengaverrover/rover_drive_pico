@@ -28,6 +28,9 @@ constexpr static rclc_parameter_type_t maxMotorCurrentType = RCLC_PARAMETER_DOUB
 constexpr static etl::string_view motorPidLoopPeriodMsName{ "motor_pid_loop_period_ms" };
 constexpr static rclc_parameter_type_t motorPidLoopPeriodMsType = RCLC_PARAMETER_INT;
 
+constexpr static etl::string_view executorSpinPeriodMsName{ "executor_spin_period_ms" };
+constexpr static rclc_parameter_type_t executorSpinPeriodMsType = RCLC_PARAMETER_INT;
+
 constexpr static etl::string_view motorTimeoutMsName{ "motor_timeout_ms" };
 constexpr static rclc_parameter_type_t motorTimeoutMsType = RCLC_PARAMETER_INT;
 
@@ -82,6 +85,8 @@ rcl_ret_t Server::initParameters() {
     ret += rclc_add_parameter(&paramServer_, maxMotorCurrentName.data(), maxMotorCurrentType);
     ret += rclc_add_parameter(
         &paramServer_, motorPidLoopPeriodMsName.data(), motorPidLoopPeriodMsType);
+    ret += rclc_add_parameter(
+        &paramServer_, executorSpinPeriodMsName.data(), executorSpinPeriodMsType);
     ret += rclc_add_parameter(&paramServer_, motorTimeoutMsName.data(), motorTimeoutMsType);
     ret += rclc_add_parameter(
         &paramServer_, motorFeedbackPeriodMsName.data(), motorFeedbackPeriodMsType);
@@ -98,6 +103,8 @@ rcl_ret_t Server::initParameters() {
     ret += rclc_parameter_set_double(&paramServer_, maxMotorCurrentName.data(), maxMotorCurrent);
     ret += rclc_parameter_set_int(
         &paramServer_, motorPidLoopPeriodMsName.data(), motorPidLoopPeriodMs);
+    ret += rclc_parameter_set_int(
+        &paramServer_, executorSpinPeriodMsName.data(), executorSpinPeriodMs);
     ret += rclc_parameter_set_int(&paramServer_, motorTimeoutMsName.data(), motorTimeoutMs);
     ret += rclc_parameter_set_int(
         &paramServer_, motorFeedbackPeriodMsName.data(), motorFeedbackPeriodMs);
@@ -123,6 +130,8 @@ bool onParameterChange(const Parameter* oldParam, const Parameter* newParam, voi
                 motorPidLoopPeriodMs = newParam->value.integer_value;
             } else if (motorFeedbackPeriodMsName == newParam->name.data) {
                 motorFeedbackPeriodMs = newParam->value.integer_value;
+            } else if (executorSpinPeriodMsName == newParam->name.data) {
+                executorSpinPeriodMs = newParam->value.integer_value;
             } else if (motorTimeoutMsName == newParam->name.data) {
                 motorTimeoutMs = newParam->value.integer_value;
             } else {

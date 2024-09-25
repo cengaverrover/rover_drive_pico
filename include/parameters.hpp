@@ -43,9 +43,11 @@ inline float maxMotorCurrent = 50.0f;
 
 inline int32_t motorPidLoopPeriodMs = 20;
 
-inline int32_t motorTimeoutMs = 1000;
+inline int32_t motorTimeoutMs = 1500;
 
 inline int32_t motorFeedbackPeriodMs = 100;
+
+inline int32_t executorSpinPeriodMs = 50;
 
 inline bool motorPidMode = false;
 
