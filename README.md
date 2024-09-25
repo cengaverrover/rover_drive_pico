@@ -8,14 +8,15 @@ This is the embedded firmware for Cengaver Rover's drive system using Raspberry 
 - Getting feedback at a specified rate about the dutycycle of the motor driver and RPM measured through the encoder.
 - If a current sensor is added, ability to get feedback about motor current consumption.
 - Through use of ROS parameters, various settings can be changed during runtime such as: 
-    1. Ability to set maximum dutycycle for the motors through "max_motor_dutycyle" param.
-    2. Ability to set the motor's maximum RPM through "max_motor_rpm" parameters.
-    3. Ability to turn PID control OFF and ON through "motor_pid_mode" parameters.
-    4. Ability to tune PID control using "motor_pid_kp", "motor_pid_ki" and "motor_pid_kd" parameters.
+    1. Ability to set maximum dutycycle for the motors through "motor_max_dutycyle" parameter.
+    2. Ability to set the motor's maximum RPM through "motor_max_rpm" parameter.
+    3. Ability to turn PID control OFF and ON through "motor_pid_mode" parameter.
+    4. Ability to tune PID control using "motor_pid_kp", "motor_pid_ki" and "motor_pid_kd" parameter.
     5. Ability to change the rate of motor feedback to the ROS2 computer through "motor_feedback_period_ms" parameter.
     6. Ability to change the PID loop period through "motor_pid_loop_period_ms" parameter.
     7. Ability to set timeout duration to turn motors off when ROS2 communication stops through "motor_timeout_ms" parameter. 
     8. Ability to set the maximum motor current that will turn off the motors automatically through "motor_max_current" parameter.
+    9. Ability to set the period of the microROS executor through "executor_spin_period_ms" parameter.
 
 ## To build the firmware.
 

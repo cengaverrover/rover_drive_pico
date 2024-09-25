@@ -17,13 +17,13 @@ namespace ros {
 
 namespace parameter {
 
-constexpr static etl::string_view maxMotorRpmName{ "max_motor_rpm" };
+constexpr static etl::string_view maxMotorRpmName{ "motor_max_rpm" };
 constexpr static rclc_parameter_type_t maxMotorRpmType = RCLC_PARAMETER_INT;
 
-constexpr static etl::string_view maxMotorDutyCycleName{ "max_motor_dutycycle" };
+constexpr static etl::string_view maxMotorDutyCycleName{ "motor_max_dutycycle" };
 constexpr static rclc_parameter_type_t maxMotorDutyCycleType = RCLC_PARAMETER_DOUBLE;
 
-constexpr static etl::string_view maxMotorCurrentName{ "max_motor_current" };
+constexpr static etl::string_view maxMotorCurrentName{ "motor_max_current" };
 constexpr static rclc_parameter_type_t maxMotorCurrentType = RCLC_PARAMETER_DOUBLE;
 
 constexpr static etl::string_view motorPidLoopPeriodMsName{ "motor_pid_loop_period_ms" };
@@ -85,48 +85,73 @@ Server::Server(rcl_node_t* node, bool notify_changed_over_dds, uint32_t max_para
 }
 
 rcl_ret_t Server::addToExecutor(rclc_executor_t* executor) {
-    return rclc_executor_add_parameter_server_with_context(
+    rcl_ret_t ret = rclc_executor_add_parameter_server_with_context(
         executor, &paramServer_, onParameterChange, this);
+    ret += initParameters();
+    return ret;
 }
+
+rcl_ret_t Server::addParameter(etl::string_view paramName, rclc_parameter_type_t paramType) {
+    return rclc_add_parameter(&paramServer_, paramName.data(), paramType);
+}
+
+rcl_ret_t Server::addParameterConstraint(
+    etl::string_view paramName, int32_t lower, int32_t upper, int32_t step) {
+    return rclc_add_parameter_constraint_integer(
+        &paramServer_, paramName.data(), lower, upper, step);
+}
+
+rcl_ret_t Server::addParameterConstraint(
+    etl::string_view paramName, float lower, float upper, float step) {
+    return rclc_add_parameter_constraint_double(
+        &paramServer_, paramName.data(), lower, upper, step);
+}
+
+
+rcl_ret_t Server::setParameter(etl::string_view paramName, int32_t paramValue) {
+    return rclc_parameter_set_int(&paramServer_, paramName.data(), paramValue);
+}
+
+rcl_ret_t Server::setParameter(etl::string_view paramName, float paramValue) {
+    return rclc_parameter_set_double(&paramServer_, paramName.data(), paramValue);
+}
+
+rcl_ret_t Server::setParameter(etl::string_view paramName, bool paramValue) {
+    return rclc_parameter_set_bool(&paramServer_, paramName.data(), paramValue);
+}
+
 
 rcl_ret_t Server::initParameters() {
     rcl_ret_t ret = 0;
     // Add parameters to the server.
-    ret += rclc_add_parameter(&paramServer_, maxMotorRpmName.data(), maxMotorRpmType);
-    ret += rclc_add_parameter(&paramServer_, maxMotorDutyCycleName.data(), maxMotorDutyCycleType);
-    ret += rclc_add_parameter_constraint_double(&paramServer_, maxMotorDutyCycleName.data(),
-        maxMotorDutyCycleLowerConstraint, maxMotorDutyCycleUpperConstraint, 0);
+    ret += addParameter(maxMotorRpmName, maxMotorRpmType);
+    ret += addParameter(maxMotorDutyCycleName, maxMotorDutyCycleType);
+    ret += addParameterConstraint(maxMotorDutyCycleName, maxMotorDutyCycleLowerConstraint,
+        maxMotorDutyCycleUpperConstraint, 0.0f);
 
-    ret += rclc_add_parameter(&paramServer_, maxMotorCurrentName.data(), maxMotorCurrentType);
-    ret += rclc_add_parameter(
-        &paramServer_, motorPidLoopPeriodMsName.data(), motorPidLoopPeriodMsType);
-    ret += rclc_add_parameter(
-        &paramServer_, executorSpinPeriodMsName.data(), executorSpinPeriodMsType);
-    ret += rclc_add_parameter(&paramServer_, motorTimeoutMsName.data(), motorTimeoutMsType);
-    ret += rclc_add_parameter(
-        &paramServer_, motorFeedbackPeriodMsName.data(), motorFeedbackPeriodMsType);
-    ret += rclc_add_parameter(&paramServer_, motorPidModeName.data(), motorPidModeType);
+    ret += addParameter(maxMotorCurrentName, maxMotorCurrentType);
+    ret += addParameter(motorPidLoopPeriodMsName, motorPidLoopPeriodMsType);
+    ret += addParameter(executorSpinPeriodMsName, executorSpinPeriodMsType);
+    ret += addParameter(motorTimeoutMsName, motorTimeoutMsType);
+    ret += addParameter(motorFeedbackPeriodMsName, motorFeedbackPeriodMsType);
+    ret += addParameter(motorPidModeName, motorPidModeType);
 
-    ret += rclc_add_parameter(&paramServer_, motorPidKpName.data(), motorPidKpType);
-    ret += rclc_add_parameter(&paramServer_, motorPidKdName.data(), motorPidKiType);
-    ret += rclc_add_parameter(&paramServer_, motorPidKiName.data(), motorPidKdType);
+    ret += addParameter(motorPidKpName, motorPidKpType);
+    ret += addParameter(motorPidKdName, motorPidKiType);
+    ret += addParameter(motorPidKiName, motorPidKdType);
 
     // Set the values of the parameters in &paramServer_.
-    ret += rclc_parameter_set_int(&paramServer_, maxMotorRpmName.data(), maxMotorRpm);
-    ret +=
-        rclc_parameter_set_double(&paramServer_, maxMotorDutyCycleName.data(), maxMotorDutyCycle);
-    ret += rclc_parameter_set_double(&paramServer_, maxMotorCurrentName.data(), maxMotorCurrent);
-    ret += rclc_parameter_set_int(
-        &paramServer_, motorPidLoopPeriodMsName.data(), motorPidLoopPeriodMs);
-    ret += rclc_parameter_set_int(
-        &paramServer_, executorSpinPeriodMsName.data(), executorSpinPeriodMs);
-    ret += rclc_parameter_set_int(&paramServer_, motorTimeoutMsName.data(), motorTimeoutMs);
-    ret += rclc_parameter_set_int(
-        &paramServer_, motorFeedbackPeriodMsName.data(), motorFeedbackPeriodMs);
-    ret += rclc_parameter_set_bool(&paramServer_, motorPidModeName.data(), motorPidMode);
-    ret += rclc_parameter_set_double(&paramServer_, motorPidKpName.data(), motorPidKp);
-    ret += rclc_parameter_set_double(&paramServer_, motorPidKiName.data(), motorPidKi);
-    ret += rclc_parameter_set_double(&paramServer_, motorPidKdName.data(), motorPidKd);
+    ret += setParameter(maxMotorRpmName, maxMotorRpm);
+    ret += setParameter(maxMotorDutyCycleName, maxMotorDutyCycle);
+    ret += setParameter(maxMotorCurrentName, maxMotorCurrent);
+    ret += setParameter(motorPidLoopPeriodMsName, motorPidLoopPeriodMs);
+    ret += setParameter(executorSpinPeriodMsName, executorSpinPeriodMs);
+    ret += setParameter(motorTimeoutMsName, motorTimeoutMs);
+    ret += setParameter(motorFeedbackPeriodMsName, motorFeedbackPeriodMs);
+    ret += setParameter(motorPidModeName, motorPidMode);
+    ret += setParameter(motorPidKpName, motorPidKp);
+    ret += setParameter(motorPidKiName, motorPidKi);
+    ret += setParameter(motorPidKdName, motorPidKd);
     return ret;
 }
 

@@ -14,6 +14,7 @@
 
 #include <pico/types.h>
 #include <rclc_parameter/rclc_parameter.h>
+#include <etl/string_view.h>
 
 namespace ros {
 
@@ -27,10 +28,20 @@ public:
         bool allow_undeclared_parameters, bool low_mem_mode);
 
     rcl_ret_t addToExecutor(rclc_executor_t* executor);
-    rcl_ret_t initParameters();
+
+    rcl_ret_t addParameter(etl::string_view paramName, rclc_parameter_type_t paramType);
+
+    rcl_ret_t addParameterConstraint(etl::string_view paramName, int32_t lower, int32_t upper, int32_t step = 0);
+    rcl_ret_t addParameterConstraint(
+        etl::string_view paramName, float lower, float upper, float step = 0.0f);
+    
+    rcl_ret_t setParameter(etl::string_view paramName, int32_t paramValue);
+    rcl_ret_t setParameter(etl::string_view paramName, float paramValue);
+    rcl_ret_t setParameter(etl::string_view paramName, bool paramValue);
 
 private:
     rclc_parameter_server_t paramServer_{};
+    rcl_ret_t initParameters();
 };
 
 inline int32_t maxMotorRpm = 20000;

@@ -165,7 +165,6 @@ void microRosTask(void* arg) {
     RCCHECK(rclc_executor_init(&paramServerExecutor, &support.context,
         RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator));
     RCCHECK(paramServer.addToExecutor(&paramServerExecutor));
-    RCCHECK(paramServer.initParameters());
     sleep_ms(10);
 
     // Create the FreeRTOS motor tasks that will run on both cores.
