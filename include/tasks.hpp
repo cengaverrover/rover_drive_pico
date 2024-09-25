@@ -24,8 +24,6 @@ inline TaskHandle_t microRosTaskHandle = nullptr;
 extern "C" void microRosTask(void* arg);
 
 inline etl::array<TaskHandle_t, 4> motorTaskHandles{};
-extern "C" void motorTask(void* arg);
-
 } // namespace task
 } // namespace freertos
 

@@ -30,12 +30,12 @@ public:
     rcl_ret_t initParameters();
 
 private:
-    rclc_parameter_server_t paramServer_ {};
+    rclc_parameter_server_t paramServer_{};
 };
 
 inline int32_t maxMotorRpm = 20000;
 
-inline float           maxMotorDutyCycle = 100.0f;
+inline float maxMotorDutyCycle = 100.0f;
 constexpr inline float maxMotorDutyCycleUpperConstraint = 100.0f;
 constexpr inline float maxMotorDutyCycleLowerConstraint = 0.0f;
 

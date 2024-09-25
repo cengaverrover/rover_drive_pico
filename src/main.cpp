@@ -25,6 +25,7 @@ extern "C" {
 #include <cstdio>
 
 int main() {
+
     // Set the custom transport functions that MicroROS is going to use.
     rmw_uros_set_custom_transport(true, NULL, pico_serial_transport_open,
         pico_serial_transport_close, pico_serial_transport_write, pico_serial_transport_read);
@@ -39,9 +40,9 @@ int main() {
     while (rmw_uros_ping_agent(timeout_ms, attempts)) {
         tight_loop_contents();
     }
-
     // Set the onboard pin to high to indicate succesfull connection.
     gpio_put(pinout::led, true);
+    sleep_ms(100);
 
     // Setup all the FreeRTOS queues that will transfer data across tasks in a
     // thread safe manner.
@@ -49,6 +50,8 @@ int main() {
 
     // Create and start the main task off the program.
     freertos::createMicroRosTask();
+    freertos::createMotorTasks();
+
     vTaskStartScheduler();
 
     // Code will never reach here.

@@ -20,42 +20,95 @@
 
 namespace freertos {
 
+static etl::array<StaticQueue_t, 4> driveQueueBuffers{};
+static constexpr auto driveQueueItemSize = sizeof(rover_drive_interfaces__msg__MotorDrive);
+static constexpr int driveQueueItemCount = 1;
+static etl::array<etl::array<uint8_t, driveQueueItemSize * driveQueueItemCount>, 4>
+    driveQueueStorage{};
+
+static etl::array<StaticQueue_t, 4> publisherQueueBuffers{};
+static constexpr auto publisherQueueItemSize = sizeof(rover_drive_interfaces__msg__MotorFeedback);
+static constexpr int publisherQueueItemCount = 1;
+static etl::array<etl::array<uint8_t, publisherQueueItemSize * publisherQueueItemCount>, 4>
+    publisherQueueStorage{};
+
 void createMsgQueues() {
     // Create all the queues.
     for (int i = 0; i < queue::publisherQueues.size(); i++) {
-        queue::publisherQueues[i] =
-            xQueueCreate(1, sizeof(rover_drive_interfaces__msg__MotorFeedback));
-        queue::driveQueues[i] = xQueueCreate(1, sizeof(rover_drive_interfaces__msg__MotorDrive));
+        queue::publisherQueues[i] = xQueueCreateStatic(publisherQueueItemCount,
+            publisherQueueItemSize, publisherQueueStorage[i].data(), &publisherQueueBuffers[i]);
+        
+        queue::driveQueues[i] = xQueueCreateStatic(driveQueueItemCount, driveQueueItemSize,
+            driveQueueStorage[i].data(), &driveQueueBuffers[i]);
     }
 }
+
+static StaticTask_t microRosTaskBuffer{};
+static constexpr uint32_t microRosTaskStackSize = 3500;
+static StackType_t microRosTaskStack[microRosTaskStackSize]{};
+static constexpr uint32_t microRosTaskPriority = configMAX_PRIORITIES - 2;
+static constexpr uint32_t microRosTaskCoreAffinity = 0x01;
+static constexpr etl::string_view microRosTaskName{ "micro_ros_task" };
+
 void createMicroRosTask() {
-
-    constexpr uint32_t microRosTaskStack = 4000;
-    constexpr uint32_t microRosTaskPriority = configMAX_PRIORITIES - 2;
-    constexpr uint32_t microRosTaskCoreAffinity = 0x01;
-
-    constexpr etl::string_view microRosTaskName{ "micro_ros_task" };
-    xTaskCreateAffinitySet(task::microRosTask, microRosTaskName.data(), microRosTaskStack, nullptr,
-        microRosTaskPriority, microRosTaskCoreAffinity, &task::microRosTaskHandle);
+    task::microRosTaskHandle = xTaskCreateStaticAffinitySet(task::microRosTask,
+        microRosTaskName.data(), microRosTaskStackSize, nullptr, microRosTaskPriority,
+        microRosTaskStack, &microRosTaskBuffer, microRosTaskCoreAffinity);
 }
 
-void createMotorTasks() {
+/* configSUPPORT_STATIC_ALLOCATION is set to 1, so the application must provide an
+   implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
+   used by the Idle task. */
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint32_t *pulIdleTaskStackSize )
+{
+    /* If the buffers to be provided to the Idle task are declared inside this
+       function then they must be declared static - otherwise they will be allocated on
+       the stack and so not exists after this function exits. */
+    static StaticTask_t xIdleTaskTCB;
+    static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
 
-    constexpr uint32_t motorTaskStack = 500;
-    constexpr uint32_t motorTaskPriority = configMAX_PRIORITIES - 3;
-    constexpr uint32_t motorTaskCoreAffinity = 0x03;
+    /* Pass out a pointer to the StaticTask_t structure in which the Idle task's
+       state will be stored. */
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
 
-    constexpr etl::array<etl::string_view, 4> taskNames{ "motor_task_0", "motor_task_1",
-        "motor_task_2", "motor_task_3" };
-    // This indexes represent which publisher and subscriber queue the motor task
-    // is going to use.
-    // Even though these values are pointers, we only use the pointers as
-    // numerical values instead of adresses because FreeRTOS tasks take a void*
-    // argument for custom data.
-    void* indexes[4]{ (void*)0, (void*)1, (void*)2, (void*)3 };
-    for (int i = 0; i < taskNames.size(); i++) {
-        xTaskCreateAffinitySet(task::motorTask, taskNames[i].data(), motorTaskStack, indexes[i],
-            motorTaskPriority, motorTaskCoreAffinity, &task::motorTaskHandles[i]);
-    }
+    /* Pass out the array that will be used as the Idle task's stack. */
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+
+    /* Pass out the size of the array pointed to by *ppxIdleTaskStackBuffer.
+       Note that, as the array is necessarily of type StackType_t,
+       configMINIMAL_STACK_SIZE is specified in words, not bytes. */
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
+
+/*-----------------------------------------------------------*/
+
+/* configSUPPORT_STATIC_ALLOCATION and configUSE_TIMERS are both set to 1, so the
+   application must provide an implementation of vApplicationGetTimerTaskMemory()
+   to provide the memory that is used by the Timer service task. */
+void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer,
+                                     StackType_t **ppxTimerTaskStackBuffer,
+                                     uint32_t *pulTimerTaskStackSize )
+{
+    /* If the buffers to be provided to the Timer task are declared inside this
+       function then they must be declared static - otherwise they will be allocated on
+       the stack and so not exists after this function exits. */
+    static StaticTask_t xTimerTaskTCB;
+    static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+
+    /* Pass out a pointer to the StaticTask_t structure in which the Timer
+       task's state will be stored. */
+    *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
+
+    /* Pass out the array that will be used as the Timer task's stack. */
+    *ppxTimerTaskStackBuffer = uxTimerTaskStack;
+
+    /* Pass out the size of the array pointed to by *ppxTimerTaskStackBuffer.
+       Note that, as the array is necessarily of type StackType_t,
+      configTIMER_TASK_STACK_DEPTH is specified in words, not bytes. */
+    *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
+}
+
+
 } // namespace freertos

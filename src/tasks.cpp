@@ -15,15 +15,12 @@ namespace freertos {
 
 namespace task {
 
-void motorTask(void* arg) {
-    // Convert the index into size_t. This void* arg is the value we got from
-    // indexes[i] in createMotorTasks()
-    const size_t i = (size_t)(arg);
-
+template <uint i> void motorTask(void* arg) {
     // Create the motor and encoder classes.
     motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
     encoder::EncoderSubstep encoder(
         pinout::encoderPio, pinout::encoderPioSm[i], pinout::encoderA[i]);
+    sleep_ms(10);
 
     // Create the ros messeages.
     rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
@@ -78,11 +75,11 @@ void motorTask(void* arg) {
         feedbackMsgSent.dutycycle = etl::clamp(feedbackMsgSent.dutycycle,
             -ros::parameter::maxMotorDutyCycle,
             ros::parameter::maxMotorDutyCycle);
-    
+
         // Imaginary current value to test current limiting property since we do
         // not have a current sensor yet.
-        feedbackMsgSent.current =
-            (feedbackMsgSent.dutycycle) * (ros::parameter::maxMotorCurrent - 5.0f) / 100.0f;
+        // feedbackMsgSent.current =
+        //     (feedbackMsgSent.dutycycle) * (ros::parameter::maxMotorCurrent - 5.0f) / 100.0f;
 
         // Set the dutycyle of the motors.
         motor.setSpeed(feedbackMsgSent.dutycycle);
@@ -96,29 +93,31 @@ void motorTask(void* arg) {
 void microRosTask(void* arg) {
     // Suspend the FreeRTOS scheduler since the MicroROS initialization is not
     // thread safe.
-    vTaskSuspendAll();
 
     // MicroRos boiler plate.
     rcl_allocator_t allocator = rcl_get_default_allocator();
 
     rclc_support_t support{};
     rclc_support_init(&support, 0, NULL, &allocator);
+    sleep_ms(100);
 
     rcl_node_t node = rcl_get_zero_initialized_node();
     rclc_node_init_default(&node, "pico_node", "drive", &support);
 
     // Create the MicroROS motor feedback publishers
     ros::createMotorFeedbackPublishers(&node);
+    sleep_ms(10);
 
     // Create the MicroROS motor drive subscribers.
-    constexpr etl::array<etl::string_view, 4> subscriberNames{ "pico_subscriber_0",
-        "pico_subscriber_1", "pico_subscriber_2", "pico_subscriber_3" };
+    constexpr etl::array<etl::string_view, 4> subscriberNames{ "motor_drive_front_left",
+        "motor_drive_back_left", "motor_drive_front_right", "motor_drive_back_right" };
     auto subscriberMsgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive);
     etl::array<ros::Subscriber, 4> driveSubscribers{ ros::Subscriber(&node, subscriberNames[0],
                                                          subscriberMsgType),
         ros::Subscriber(&node, subscriberNames[1], subscriberMsgType),
         ros::Subscriber(&node, subscriberNames[2], subscriberMsgType),
         ros::Subscriber(&node, subscriberNames[3], subscriberMsgType) };
+    sleep_ms(10);
 
     // Create MicroROS timer that will publish the feedback messeages
     // We use a MicroROS task for publishing instead of publishing directly in
@@ -128,6 +127,7 @@ void microRosTask(void* arg) {
     publisherTimer = rcl_get_zero_initialized_timer();
     rclc_timer_init_default(&publisherTimer, &support,
         RCL_MS_TO_NS(ros::parameter::motorFeedbackPeriodMs), ros::publisherTimerCallback);
+    sleep_ms(10);
 
     // Create the executor responsible for all the subscribers and the timer.
     rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
@@ -138,38 +138,56 @@ void microRosTask(void* arg) {
             ros::driveSubscriberCallback, queue::driveQueues[i], ON_NEW_DATA);
     }
     rclc_executor_add_timer(&executor, &publisherTimer);
+    sleep_ms(10);
 
     // Create the parameter server and a seperate executor for the parameter
     // server.
     // We need the second executor since we have more handles than the maximum
     // executor handle.
-    ros::parameter::Server paramServer(&node, true, 10, true, false);
+    ros::parameter::Server paramServer(&node, true, 10, false, true);
     rclc_executor_t paramServerExecutor = rclc_executor_get_zero_initialized_executor();
     rclc_executor_init(
         &paramServerExecutor, &support.context, RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator);
     paramServer.addToExecutor(&paramServerExecutor);
     paramServer.initParameters();
+    sleep_ms(10);
 
     // Create the FreeRTOS motor tasks that will run on both cores.
-    freertos::createMotorTasks();
-    // Resume the scheduler since the initialization is complete.
-    xTaskResumeAll();
     // Set the watchdog timer that will reset microcontroller if it is not updated
     // within set time period.
     watchdog_enable(ros::parameter::motorFeedbackPeriodMs * 10, true);
     while (true) {
+        // Update the watchdog
+        watchdog_update();
         // Spin the executors to check if there are new subscriber messeages or
         // parameter server requests.
         const auto executorResult = rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
         const auto paramExecutorResult =
             rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(1));
-        // Update the watchdog
-        watchdog_update();
         // Delay the tasks to free the core for other tasks.
         // TODO add parameter to control executor period.
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 } // namespace task
+
+static constexpr etl::array taskFunctions{ task::motorTask<0>, task::motorTask<1>,
+    task::motorTask<2>, task::motorTask<3> };
+
+static etl::array<StaticTask_t, 4> motorTaskBuffer{};
+static constexpr uint32_t motorTaskStackSize = 256;
+static etl::array<etl::array<StackType_t, motorTaskStackSize>, 4> motorTaskStack{};
+static constexpr uint32_t motorTaskPriority = configMAX_PRIORITIES - 3;
+static constexpr uint32_t motorTaskCoreAffinity = 0x03;
+constexpr etl::array taskNames{ "motor_task_0", "motor_task_1", "motor_task_2", "motor_task_3" };
+
+void createMotorTasks() {
+    for (int i = 0; i < 4; i++) {
+        task::motorTaskHandles[i] = xTaskCreateStaticAffinitySet(taskFunctions[i], taskNames[i],
+            motorTaskStackSize, nullptr, motorTaskPriority, motorTaskStack[i].data(),
+            &motorTaskBuffer[i], motorTaskCoreAffinity);
+    }
+}
+
 
 } // namespace freertos

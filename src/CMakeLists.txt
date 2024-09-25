@@ -13,7 +13,6 @@ target_link_libraries(${NAME}
     hardware_watchdog
     micro_ros
     FreeRTOS-Kernel-Static
-    FreeRTOS-Kernel-Heap4 
     etl::etl
     pico_BTS7960
     pico_encoder_substep_class
