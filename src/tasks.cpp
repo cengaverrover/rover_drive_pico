@@ -124,14 +124,7 @@ void microRosTask(void* arg) {
     sleep_ms(10);
 
     // Create the MicroROS motor drive subscribers.
-    constexpr etl::array<etl::string_view, 4> subscriberNames{ "motor_drive_front_left",
-        "motor_drive_back_left", "motor_drive_front_right", "motor_drive_back_right" };
-    auto subscriberMsgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive);
-    etl::array<ros::Subscriber, 4> driveSubscribers{ ros::Subscriber(&node, subscriberNames[0],
-                                                         subscriberMsgType),
-        ros::Subscriber(&node, subscriberNames[1], subscriberMsgType),
-        ros::Subscriber(&node, subscriberNames[2], subscriberMsgType),
-        ros::Subscriber(&node, subscriberNames[3], subscriberMsgType) };
+    auto driveSubscribers{ ros::createSubscribers(&node) };
     sleep_ms(10);
 
     // Create MicroROS timer that will publish the feedback messeages
@@ -139,7 +132,6 @@ void microRosTask(void* arg) {
     // FreeRTOS tasks as I had problem with random crashes when publishing from
     // different cores at the same time.
     rcl_timer_t publisherTimer = rcl_get_zero_initialized_timer();
-    publisherTimer = rcl_get_zero_initialized_timer();
     RCCHECK(rclc_timer_init_default(&publisherTimer, &support,
         RCL_MS_TO_NS(ros::parameter::motorFeedbackPeriodMs), ros::publisherTimerCallback));
     sleep_ms(10);
@@ -148,8 +140,9 @@ void microRosTask(void* arg) {
     rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
     // Add the subscribers and the timer to the executor.
+    etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
     for (int i = 0; i < driveSubscribers.size(); i++) {
-        RCCHECK(driveSubscribers[i].addToExecutor(&executor, &ros::driveMsgs[i],
+        RCCHECK(driveSubscribers[i].addToExecutor(&executor, &driveMsgs[i],
             ros::driveSubscriberCallback, queue::driveQueues[i], ON_NEW_DATA));
     }
     RCCHECK(rclc_executor_add_timer(&executor, &publisherTimer));

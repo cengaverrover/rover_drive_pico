@@ -17,15 +17,33 @@
 
 namespace ros {
 
+Publisher::Publisher(
+    rcl_node_t* node, etl::string_view name, const rosidl_message_type_support_t* typeSupport) {
+    if (node != nullptr) {
+        rclc_publisher_init_default(&publisher_, node, typeSupport, name.data());
+    }
+}
+
+rcl_ret_t Publisher::init(
+    rcl_node_t* node, etl::string_view name, const rosidl_message_type_support_t* typeSupport) {
+    return rclc_publisher_init_default(&publisher_, node, typeSupport, name.data());
+}
+
+
+rcl_ret_t Publisher::publish(const void* msg, rmw_publisher_allocation_t* allocation) {
+    return rcl_publish(&publisher_, msg, allocation);
+}
+
+static etl::array<Publisher, 4> motorFeedbackPublishers{};
+static etl::array<rover_drive_interfaces__msg__MotorFeedback, 4> motorFeedbackMsgs{};
+
 rcl_ret_t createMotorFeedbackPublishers(rcl_node_t* node) {
     constexpr etl::array publisherNames{ "motor_feedback_front_left", "motor_feedback_back_left",
         "motor_feedback_front_right", "motor_feedback_back_right" };
     const auto msgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorFeedback);
     rcl_ret_t ret = 0;
     for (int i = 0; i < publisherNames.size(); i++) {
-        motorFeedbackPublishers[i] = rcl_get_zero_initialized_publisher();
-        ret += rclc_publisher_init_default(
-            &motorFeedbackPublishers[i], node, msgType, publisherNames[i]);
+        ret += motorFeedbackPublishers[i].init(node, publisherNames[i], msgType);
     }
     return ret;
 }
@@ -43,7 +61,7 @@ void publisherTimerCallback(rcl_timer_t* timer, int64_t last_call_time) {
     rover_drive_interfaces__msg__MotorFeedback feedbackMsgBuffer{};
     for (int i = 0; i < motorFeedbackPublishers.size(); i++) {
         if (xQueueReceive(freertos::queue::publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
-            ret += rcl_publish(&motorFeedbackPublishers[i], &feedbackMsgBuffer, nullptr);
+            ret += motorFeedbackPublishers[i].publish(&feedbackMsgBuffer);
         }
     }
 }

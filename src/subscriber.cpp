@@ -18,8 +18,8 @@
 namespace ros {
 
 void driveSubscriberCallback(const void* msgin, void* context) {
-    QueueHandle_t driveQueue = static_cast<QueueHandle_t>(context);
-    if (msgin != NULL) {
+    if (msgin != nullptr || context != nullptr) {
+        QueueHandle_t driveQueue = static_cast<QueueHandle_t>(context);
         auto msg = static_cast<const rover_drive_interfaces__msg__MotorDrive*>(msgin);
         xQueueOverwrite(driveQueue, msg);
     }
@@ -36,6 +36,18 @@ rcl_ret_t Subscriber::addToExecutor(rclc_executor_t* executor, void* msg,
     rclc_executor_handle_invocation_t event) {
     return rclc_executor_add_subscription_with_context(
         executor, &subscriber_, msg, callback, context, event);
+}
+
+
+etl::array<Subscriber, 4> createSubscribers(rcl_node_t* node) {
+    constexpr etl::array<etl::string_view, 4> subscriberNames{ "motor_drive_front_left",
+        "motor_drive_back_left", "motor_drive_front_right", "motor_drive_back_right" };
+    const auto subscriberMsgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive);
+    
+    return { ros::Subscriber(node, subscriberNames[0], subscriberMsgType),
+        ros::Subscriber(node, subscriberNames[1], subscriberMsgType),
+        ros::Subscriber(node, subscriberNames[2], subscriberMsgType),
+        ros::Subscriber(node, subscriberNames[3], subscriberMsgType) };
 }
 
 } // namespace ros

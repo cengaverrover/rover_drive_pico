@@ -20,8 +20,6 @@
 
 namespace ros {
 
-inline etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
-
 extern "C" void driveSubscriberCallback(const void* msgin, void* context);
 
 class Subscriber {
@@ -35,6 +33,9 @@ public:
 private:
     rcl_subscription_t subscriber_{};
 };
+
+etl::array<Subscriber, 4> createSubscribers(rcl_node_t * node);
+
 } // namespace ros
 
 #endif // SUBSCRIBER_HPP
