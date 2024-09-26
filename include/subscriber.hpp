@@ -34,7 +34,7 @@ private:
     rcl_subscription_t subscriber_{};
 };
 
-etl::array<Subscriber, 4> createSubscribers(rcl_node_t * node);
+etl::array<Subscriber, 4> createDriveSubscribers(rcl_node_t * node);
 
 } // namespace ros
 

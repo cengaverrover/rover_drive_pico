@@ -30,6 +30,9 @@ public:
     rcl_ret_t addToExecutor(rclc_executor_t* executor);
 
     rcl_ret_t addParameter(etl::string_view paramName, rclc_parameter_type_t paramType);
+    rcl_ret_t addParameter(etl::string_view paramName, int32_t value);
+    rcl_ret_t addParameter(etl::string_view paramName, float value);
+    rcl_ret_t addParameter(etl::string_view paramName, bool value);
 
     rcl_ret_t addParameterConstraint(etl::string_view paramName, int32_t lower, int32_t upper, int32_t step = 0);
     rcl_ret_t addParameterConstraint(

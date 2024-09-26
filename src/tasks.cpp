@@ -124,7 +124,7 @@ void microRosTask(void* arg) {
     sleep_ms(10);
 
     // Create the MicroROS motor drive subscribers.
-    auto driveSubscribers{ ros::createSubscribers(&node) };
+    auto driveSubscribers{ ros::createDriveSubscribers(&node) };
     sleep_ms(10);
 
     // Create MicroROS timer that will publish the feedback messeages

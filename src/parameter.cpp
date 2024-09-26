@@ -18,37 +18,16 @@ namespace ros {
 namespace parameter {
 
 constexpr static etl::string_view maxMotorRpmName{ "motor_max_rpm" };
-constexpr static rclc_parameter_type_t maxMotorRpmType = RCLC_PARAMETER_INT;
-
 constexpr static etl::string_view maxMotorDutyCycleName{ "motor_max_dutycycle" };
-constexpr static rclc_parameter_type_t maxMotorDutyCycleType = RCLC_PARAMETER_DOUBLE;
-
 constexpr static etl::string_view maxMotorCurrentName{ "motor_max_current" };
-constexpr static rclc_parameter_type_t maxMotorCurrentType = RCLC_PARAMETER_DOUBLE;
-
 constexpr static etl::string_view motorPidLoopPeriodMsName{ "motor_pid_loop_period_ms" };
-constexpr static rclc_parameter_type_t motorPidLoopPeriodMsType = RCLC_PARAMETER_INT;
-
 constexpr static etl::string_view executorSpinPeriodMsName{ "executor_spin_period_ms" };
-constexpr static rclc_parameter_type_t executorSpinPeriodMsType = RCLC_PARAMETER_INT;
-
 constexpr static etl::string_view motorTimeoutMsName{ "motor_timeout_ms" };
-constexpr static rclc_parameter_type_t motorTimeoutMsType = RCLC_PARAMETER_INT;
-
 constexpr static etl::string_view motorFeedbackPeriodMsName{ "motor_feedback_period_ms" };
-constexpr static rclc_parameter_type_t motorFeedbackPeriodMsType = RCLC_PARAMETER_INT;
-
 constexpr static etl::string_view motorPidModeName{ "motor_pid_mode" };
-constexpr static rclc_parameter_type_t motorPidModeType = RCLC_PARAMETER_BOOL;
-
 constexpr static etl::string_view motorPidKpName{ "motor_pid_kp" };
-constexpr static rclc_parameter_type_t motorPidKpType = RCLC_PARAMETER_DOUBLE;
-
 constexpr static etl::string_view motorPidKiName{ "motor_pid_ki" };
-constexpr static rclc_parameter_type_t motorPidKiType = RCLC_PARAMETER_DOUBLE;
-
 constexpr static etl::string_view motorPidKdName{ "motor_pid_kd" };
-constexpr static rclc_parameter_type_t motorPidKdType = RCLC_PARAMETER_DOUBLE;
 
 static etl::unordered_map<etl::string_view, void*, 11> parameters{
     {maxMotorRpmName,            &maxMotorRpm          },
@@ -95,6 +74,24 @@ rcl_ret_t Server::addParameter(etl::string_view paramName, rclc_parameter_type_t
     return rclc_add_parameter(&paramServer_, paramName.data(), paramType);
 }
 
+rcl_ret_t Server::addParameter(etl::string_view paramName, int32_t value) {
+    rcl_ret_t ret = addParameter(paramName, RCLC_PARAMETER_INT);
+    ret += setParameter(paramName, value);
+    return ret;
+}
+
+rcl_ret_t Server::addParameter(etl::string_view paramName, float value) {
+    rcl_ret_t ret = addParameter(paramName, RCLC_PARAMETER_DOUBLE);
+    ret += setParameter(paramName, value);
+    return ret;
+}
+
+rcl_ret_t Server::addParameter(etl::string_view paramName, bool value) {
+    rcl_ret_t ret = addParameter(paramName, RCLC_PARAMETER_BOOL);
+    ret += setParameter(paramName, value);
+    return ret;
+}
+
 rcl_ret_t Server::addParameterConstraint(
     etl::string_view paramName, int32_t lower, int32_t upper, int32_t step) {
     return rclc_add_parameter_constraint_integer(
@@ -124,34 +121,21 @@ rcl_ret_t Server::setParameter(etl::string_view paramName, bool paramValue) {
 rcl_ret_t Server::initParameters() {
     rcl_ret_t ret = 0;
     // Add parameters to the server.
-    ret += addParameter(maxMotorRpmName, maxMotorRpmType);
-    ret += addParameter(maxMotorDutyCycleName, maxMotorDutyCycleType);
+    ret += addParameter(maxMotorRpmName, maxMotorRpm);
+    ret += addParameter(maxMotorDutyCycleName, maxMotorDutyCycle);
     ret += addParameterConstraint(maxMotorDutyCycleName, maxMotorDutyCycleLowerConstraint,
         maxMotorDutyCycleUpperConstraint, 0.0f);
 
-    ret += addParameter(maxMotorCurrentName, maxMotorCurrentType);
-    ret += addParameter(motorPidLoopPeriodMsName, motorPidLoopPeriodMsType);
-    ret += addParameter(executorSpinPeriodMsName, executorSpinPeriodMsType);
-    ret += addParameter(motorTimeoutMsName, motorTimeoutMsType);
-    ret += addParameter(motorFeedbackPeriodMsName, motorFeedbackPeriodMsType);
-    ret += addParameter(motorPidModeName, motorPidModeType);
+    ret += addParameter(maxMotorCurrentName, maxMotorCurrent);
+    ret += addParameter(motorPidLoopPeriodMsName, motorPidLoopPeriodMs);
+    ret += addParameter(executorSpinPeriodMsName, executorSpinPeriodMs);
+    ret += addParameter(motorTimeoutMsName, motorTimeoutMs);
+    ret += addParameter(motorFeedbackPeriodMsName, motorFeedbackPeriodMs);
+    ret += addParameter(motorPidModeName, motorPidMode);
 
-    ret += addParameter(motorPidKpName, motorPidKpType);
-    ret += addParameter(motorPidKdName, motorPidKiType);
-    ret += addParameter(motorPidKiName, motorPidKdType);
-
-    // Set the values of the parameters in &paramServer_.
-    ret += setParameter(maxMotorRpmName, maxMotorRpm);
-    ret += setParameter(maxMotorDutyCycleName, maxMotorDutyCycle);
-    ret += setParameter(maxMotorCurrentName, maxMotorCurrent);
-    ret += setParameter(motorPidLoopPeriodMsName, motorPidLoopPeriodMs);
-    ret += setParameter(executorSpinPeriodMsName, executorSpinPeriodMs);
-    ret += setParameter(motorTimeoutMsName, motorTimeoutMs);
-    ret += setParameter(motorFeedbackPeriodMsName, motorFeedbackPeriodMs);
-    ret += setParameter(motorPidModeName, motorPidMode);
-    ret += setParameter(motorPidKpName, motorPidKp);
-    ret += setParameter(motorPidKiName, motorPidKi);
-    ret += setParameter(motorPidKdName, motorPidKd);
+    ret += addParameter(motorPidKpName, motorPidKp);
+    ret += addParameter(motorPidKdName, motorPidKi);
+    ret += addParameter(motorPidKiName, motorPidKd);
     return ret;
 }
 

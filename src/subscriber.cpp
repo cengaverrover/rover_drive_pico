@@ -39,7 +39,7 @@ rcl_ret_t Subscriber::addToExecutor(rclc_executor_t* executor, void* msg,
 }
 
 
-etl::array<Subscriber, 4> createSubscribers(rcl_node_t* node) {
+etl::array<Subscriber, 4> createDriveSubscribers(rcl_node_t* node) {
     constexpr etl::array<etl::string_view, 4> subscriberNames{ "motor_drive_front_left",
         "motor_drive_back_left", "motor_drive_front_right", "motor_drive_back_right" };
     const auto subscriberMsgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorDrive);

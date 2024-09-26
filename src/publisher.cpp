@@ -35,7 +35,6 @@ rcl_ret_t Publisher::publish(const void* msg, rmw_publisher_allocation_t* alloca
 }
 
 static etl::array<Publisher, 4> motorFeedbackPublishers{};
-static etl::array<rover_drive_interfaces__msg__MotorFeedback, 4> motorFeedbackMsgs{};
 
 rcl_ret_t createMotorFeedbackPublishers(rcl_node_t* node) {
     constexpr etl::array publisherNames{ "motor_feedback_front_left", "motor_feedback_back_left",
