@@ -112,6 +112,7 @@ void microRosTask(void* arg) {
     while (rclc_support_init(&support, 0, nullptr, &allocator) != RCL_RET_OK) {
         rmw_uros_ping_agent(200, 1);
     }
+    sleep_ms(100);
     watchdog_enable(1500, true);
     // Set the onboard pin to high to indicate succesfull connection.
     gpio_put(pinout::led, true);
@@ -119,13 +120,13 @@ void microRosTask(void* arg) {
     sleep_ms(10);
 
     rcl_node_t node = rcl_get_zero_initialized_node();
-    RCCHECK(rclc_node_init_default(&node, "pico_node", "drive", &support));
+    RCCHECK(rclc_node_init_default(&node, "pico_node", "mobility", &support));
 
     // Create the MicroROS motor feedback publishers
     RCCHECK(ros::createMobilityFeedbackPublisher(&node));
     sleep_ms(10);
 
-    ros::Subscriber mobilityControlSubscriber(&node, "mobility_control",
+    ros::Subscriber mobilityControlSubscriber(&node, "motor_control",
         ROSIDL_GET_MSG_TYPE_SUPPORT(rover_mobility_interfaces, msg, MobilityControl));
     sleep_ms(10);
 

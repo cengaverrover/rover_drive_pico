@@ -28,7 +28,10 @@ pico_add_extra_outputs(${NAME})
 
 # enable usb output, disable uart output
 pico_enable_stdio_usb(${NAME} 1)
-pico_enable_stdio_uart(${NAME} 0)
-add_compile_definitions(PICO_UART_ENABLE_CRLF_SUPPORT=0)
-add_compile_definitions(PICO_STDIO_ENABLE_CRLF_SUPPORT=0)
-add_compile_definitions(PICO_STDIO_DEFAULT_CRLF=0)
+pico_enable_stdio_uart(${NAME} 1)
+add_compile_definitions(PICO_USB_ENABLE_CRLF_SUPPORT=0)
+
+
+# add_compile_definitions(PICO_UART_ENABLE_CRLF_SUPPORT=0)
+# add_compile_definitions(PICO_STDIO_ENABLE_CRLF_SUPPORT=0)
+# add_compile_definitions(PICO_STDIO_DEFAULT_CRLF=0)
