@@ -178,22 +178,18 @@ void microRosTask(void* arg) {
 }
 } // namespace task
 
-static constexpr etl::array taskFunctions{ task::motorTask<0>, task::motorTask<1>,
-    task::motorTask<2>, task::motorTask<3> };
-static etl::array<StaticTask_t, 4> motorTaskBuffer{};
-static constexpr uint32_t motorTaskStackSize = 500;
-static constexpr etl::array<void*, 4> motorTaskParameters{};
-static etl::array<etl::array<StackType_t, motorTaskStackSize>, 4> motorTaskStack{};
-static constexpr uint32_t motorTaskPriority = configMAX_PRIORITIES - 3;
-static constexpr uint32_t motorTaskCoreAffinity = 0x03;
-static constexpr etl::array taskNames{ "motor_task_0", "motor_task_1", "motor_task_2",
-    "motor_task_3" };
 
 void createMotorTasks() {
+    constexpr etl::array taskFunctions{ task::motorTask<0>, task::motorTask<1>, task::motorTask<2>,
+        task::motorTask<3> };
+    constexpr uint32_t motorTaskStackSize = 500;
+    constexpr uint32_t motorTaskPriority = configMAX_PRIORITIES - 3;
+    constexpr uint32_t motorTaskCoreAffinity = 0x03;
+    constexpr etl::array taskNames{ "motor_task_0", "motor_task_1", "motor_task_2",
+        "motor_task_3" };
     for (int i = 0; i < 4; i++) {
-        task::motorTaskHandles[i] = xTaskCreateStaticAffinitySet(taskFunctions[i], taskNames[i],
-            motorTaskStackSize, motorTaskParameters[i], motorTaskPriority, motorTaskStack[i].data(),
-            &motorTaskBuffer[i], motorTaskCoreAffinity);
+        xTaskCreateAffinitySet(taskFunctions[i], taskNames[i], motorTaskStackSize, nullptr,
+            motorTaskPriority, motorTaskCoreAffinity, &task::motorTaskHandles[i]);
     }
 }
 

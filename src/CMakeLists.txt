@@ -12,7 +12,7 @@ target_link_libraries(${NAME}
     pico_stdlib
     hardware_watchdog
     micro_ros
-    FreeRTOS-Kernel-Static
+    FreeRTOS-Kernel-Heap4
     etl::etl
     pico_motor
     pico_encoder_substep_class
