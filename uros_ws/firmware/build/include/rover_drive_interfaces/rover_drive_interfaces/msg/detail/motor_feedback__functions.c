@@ -18,7 +18,7 @@ rover_drive_interfaces__msg__MotorFeedback__init(rover_drive_interfaces__msg__Mo
     return false;
   }
   // dutycycle
-  // encoder_rpm
+  // rpm
   // current
   return true;
 }
@@ -30,7 +30,7 @@ rover_drive_interfaces__msg__MotorFeedback__fini(rover_drive_interfaces__msg__Mo
     return;
   }
   // dutycycle
-  // encoder_rpm
+  // rpm
   // current
 }
 
@@ -44,8 +44,8 @@ rover_drive_interfaces__msg__MotorFeedback__are_equal(const rover_drive_interfac
   if (lhs->dutycycle != rhs->dutycycle) {
     return false;
   }
-  // encoder_rpm
-  if (lhs->encoder_rpm != rhs->encoder_rpm) {
+  // rpm
+  if (lhs->rpm != rhs->rpm) {
     return false;
   }
   // current
@@ -65,8 +65,8 @@ rover_drive_interfaces__msg__MotorFeedback__copy(
   }
   // dutycycle
   output->dutycycle = input->dutycycle;
-  // encoder_rpm
-  output->encoder_rpm = input->encoder_rpm;
+  // rpm
+  output->rpm = input->rpm;
   // current
   output->current = input->current;
   return true;

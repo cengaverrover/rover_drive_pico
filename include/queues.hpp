@@ -22,8 +22,8 @@ namespace freertos {
 
 namespace queue {
 
-inline etl::array<QueueHandle_t, 4> publisherQueues{};
-inline etl::array<QueueHandle_t, 4> driveQueues{};
+inline etl::array<QueueHandle_t, 4> motorFeedbackQueues{};
+inline etl::array<QueueHandle_t, 4> mobilityControlQueues{};
 
 } // namespace queue
 } // namespace freertos

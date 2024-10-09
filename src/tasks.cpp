@@ -9,6 +9,7 @@
 #include "motor.hpp"
 #include "encoder_substep.hpp"
 #include "pinout.hpp"
+#include "messages.hpp"
 
 #include <hardware/watchdog.h>
 
@@ -24,8 +25,8 @@ template <uint i> void motorTask(void* arg) {
     sleep_ms(10);
 
     // Create the ros messeages.
-    rover_drive_interfaces__msg__MotorDrive driveMsgReceived{};
-    rover_drive_interfaces__msg__MotorFeedback feedbackMsgSent{};
+    int32_t targetRpmReceived{};
+    MotorFeedback feedbackMsgSent{};
 
     // Integral and previous error to use for PID.
     float integral = 0.0f;
@@ -38,12 +39,13 @@ template <uint i> void motorTask(void* arg) {
         // If there is a new drive messeage available, receive it and update the
         // lastMsgReceivedTime variable. Otherwise, don't wait for new data and
         // continue.
-        if (xQueueReceive(freertos::queue::driveQueues[i], &driveMsgReceived, 0) == pdTRUE) {
+        if (xQueueReceive(freertos::queue::mobilityControlQueues[i], &targetRpmReceived, 0) ==
+            pdTRUE) {
             lastMsgReceivedTime = get_absolute_time();
         }
 
         // Read the current RPM from encoders.
-        feedbackMsgSent.encoder_rpm = encoder.getRpm();
+        feedbackMsgSent.rpm = encoder.getRpm();
         // Calculate the time since the last messeage was received.
         auto timeDiffMsg = absolute_time_diff_us(lastMsgReceivedTime, get_absolute_time()) / 1000;
 
@@ -51,11 +53,11 @@ template <uint i> void motorTask(void* arg) {
         // reached, set the target RPM to 0 to turn the motors off.
         if (feedbackMsgSent.current >= ros::parameter::maxMotorCurrent ||
             timeDiffMsg >= ros::parameter::motorTimeoutMs) {
-            driveMsgReceived.target_rpm = 0;
+            targetRpmReceived = 0;
         }
         // If PID mode is open calculate the PID values.
         if (ros::parameter::motorPidMode) {
-            const int32_t errorRpm = driveMsgReceived.target_rpm - feedbackMsgSent.encoder_rpm;
+            const int32_t errorRpm = targetRpmReceived - feedbackMsgSent.rpm;
 
             const float proportional = errorRpm * ros::parameter::motorPidKd;
             integral += errorRpm * ros::parameter::motorPidKi;
@@ -68,7 +70,7 @@ template <uint i> void motorTask(void* arg) {
         } else {
             // If PID mode is off, assume there is a linear relationship between the
             // motor dutycyle and RPM and use open loop control.
-            feedbackMsgSent.dutycycle = driveMsgReceived.target_rpm *
+            feedbackMsgSent.dutycycle = targetRpmReceived *
                                         ros::parameter::maxMotorDutyCycleUpperConstraint /
                                         ros::parameter::maxMotorRpm;
         }
@@ -85,7 +87,7 @@ template <uint i> void motorTask(void* arg) {
         // Set the dutycyle of the motors.
         motor.setSpeedPercent(feedbackMsgSent.dutycycle);
         // Send the feedback messeage to the queue
-        xQueueOverwrite(freertos::queue::publisherQueues[i], &feedbackMsgSent);
+        xQueueOverwrite(freertos::queue::motorFeedbackQueues[i], &feedbackMsgSent);
         // Delay the task by the amount set in motor_pid_loop_period_ms parameter.
         xTaskDelayUntil(&startTick, pdMS_TO_TICKS(ros::parameter::motorPidLoopPeriodMs));
     }
@@ -110,7 +112,7 @@ void microRosTask(void* arg) {
     while (rclc_support_init(&support, 0, nullptr, &allocator) != RCL_RET_OK) {
         rmw_uros_ping_agent(200, 1);
     }
-    watchdog_enable(1000, true);
+    watchdog_enable(1500, true);
     // Set the onboard pin to high to indicate succesfull connection.
     gpio_put(pinout::led, true);
 
@@ -120,11 +122,11 @@ void microRosTask(void* arg) {
     RCCHECK(rclc_node_init_default(&node, "pico_node", "drive", &support));
 
     // Create the MicroROS motor feedback publishers
-    RCCHECK(ros::createMotorFeedbackPublishers(&node));
+    RCCHECK(ros::createMobilityFeedbackPublisher(&node));
     sleep_ms(10);
 
-    // Create the MicroROS motor drive subscribers.
-    auto driveSubscribers{ ros::createDriveSubscribers(&node) };
+    ros::Subscriber mobilityControlSubscriber(&node, "mobility_control",
+        ROSIDL_GET_MSG_TYPE_SUPPORT(rover_mobility_interfaces, msg, MobilityControl));
     sleep_ms(10);
 
     // Create MicroROS timer that will publish the feedback messeages
@@ -138,13 +140,11 @@ void microRosTask(void* arg) {
 
     // Create the executor responsible for all the subscribers and the timer.
     rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
-    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
     // Add the subscribers and the timer to the executor.
-    etl::array<rover_drive_interfaces__msg__MotorDrive, 4> driveMsgs{};
-    for (int i = 0; i < driveSubscribers.size(); i++) {
-        RCCHECK(driveSubscribers[i].addToExecutor(&executor, &driveMsgs[i],
-            ros::driveSubscriberCallback, queue::driveQueues[i], ON_NEW_DATA));
-    }
+    MobilityControl mobilityControlMsg{};
+    RCCHECK(mobilityControlSubscriber.addToExecutor(&executor, &mobilityControlMsg,
+        ros::mobilityControlSubscriberCallback, nullptr, ON_NEW_DATA));
     RCCHECK(rclc_executor_add_timer(&executor, &publisherTimer));
     sleep_ms(10);
 

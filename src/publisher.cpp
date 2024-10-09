@@ -14,7 +14,7 @@
 #include <rclc/publisher.h>
 #include "parameters.hpp"
 #include "queues.hpp"
-
+#include "messages.hpp"
 namespace ros {
 
 Publisher::Publisher(
@@ -34,16 +34,13 @@ rcl_ret_t Publisher::publish(const void* msg, rmw_publisher_allocation_t* alloca
     return rcl_publish(&publisher_, msg, allocation);
 }
 
-static etl::array<Publisher, 4> motorFeedbackPublishers{};
+static Publisher motorFeedbackPublisher{};
 
-rcl_ret_t createMotorFeedbackPublishers(rcl_node_t* node) {
-    constexpr etl::array publisherNames{ "motor_feedback_front_left", "motor_feedback_back_left",
-        "motor_feedback_front_right", "motor_feedback_back_right" };
-    const auto msgType = ROSIDL_GET_MSG_TYPE_SUPPORT(rover_drive_interfaces, msg, MotorFeedback);
-    rcl_ret_t ret = 0;
-    for (int i = 0; i < publisherNames.size(); i++) {
-        ret += motorFeedbackPublishers[i].init(node, publisherNames[i], msgType);
-    }
+rcl_ret_t createMobilityFeedbackPublisher(rcl_node_t* node) {
+    constexpr auto publisherName{ "motor_feedbacks" };
+    const auto msgType =
+        ROSIDL_GET_MSG_TYPE_SUPPORT(rover_mobility_interfaces, msg, MobilityFeedback);
+    rcl_ret_t ret = motorFeedbackPublisher.init(node, publisherName, msgType);
     return ret;
 }
 
@@ -57,11 +54,12 @@ void publisherTimerCallback(rcl_timer_t* timer, int64_t last_call_time) {
             timer, RCL_MS_TO_NS(parameter::motorFeedbackPeriodMs), &lastPeriod);
     }
     // Receive all the feedback messeages from the queues and publish them.
-    rover_drive_interfaces__msg__MotorFeedback feedbackMsgBuffer{};
-    for (int i = 0; i < motorFeedbackPublishers.size(); i++) {
-        if (xQueueReceive(freertos::queue::publisherQueues[i], &feedbackMsgBuffer, 0) == pdTRUE) {
-            ret += motorFeedbackPublishers[i].publish(&feedbackMsgBuffer);
-        }
+    MobilityFeedback feedbackMsgBuffer{};
+    for (int i = 0; i < freertos::queue::motorFeedbackQueues.size(); i++) {
+        if (xQueueReceive(freertos::queue::motorFeedbackQueues[i],
+                &(feedbackMsgBuffer.motor_feedbacks[i]),
+                0) == pdTRUE) {}
     }
+    ret += motorFeedbackPublisher.publish(&feedbackMsgBuffer);
 }
 } // namespace ros

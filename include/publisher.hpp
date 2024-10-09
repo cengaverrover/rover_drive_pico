@@ -14,7 +14,6 @@
 
 #include <rcl/publisher.h>
 #include <rcl/timer.h>
-#include <rover_drive_interfaces/msg/motor_feedback.h>
 
 #include <etl/array.h>
 #include <etl/string_view.h>
@@ -38,7 +37,7 @@ private:
 
 extern "C" void publisherTimerCallback(rcl_timer_t* timer, int64_t last_call_time);
 
-rcl_ret_t createMotorFeedbackPublishers(rcl_node_t* node);
+rcl_ret_t createMobilityFeedbackPublisher(rcl_node_t* node);
 
 } // namespace ros
 

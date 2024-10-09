@@ -21,7 +21,7 @@ extern "C"
 typedef struct rover_drive_interfaces__msg__MotorFeedback
 {
   float dutycycle;
-  int32_t encoder_rpm;
+  int32_t rpm;
   float current;
 } rover_drive_interfaces__msg__MotorFeedback;
 

@@ -50,14 +50,14 @@ static rosidl_typesupport_introspection_c__MessageMember rover_drive_interfaces_
     NULL  // resize(index) function pointer
   },
   {
-    "encoder_rpm",  // name
+    "rpm",  // name
     rosidl_typesupport_introspection_c__ROS_TYPE_INT32,  // type
     0,  // upper bound of string
     NULL,  // members of sub message
     false,  // is array
     0,  // array size
     false,  // is upper bound
-    offsetof(rover_drive_interfaces__msg__MotorFeedback, encoder_rpm),  // bytes offset in struct
+    offsetof(rover_drive_interfaces__msg__MotorFeedback, rpm),  // bytes offset in struct
     NULL,  // default value
     NULL,  // size() function pointer
     NULL,  // get_const(index) function pointer

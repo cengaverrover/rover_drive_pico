@@ -12,26 +12,27 @@
 #include "freertos.hpp"
 #include "queues.hpp"
 #include "tasks.hpp"
-
-#include <rover_drive_interfaces/msg/motor_drive.h>
-#include <rover_drive_interfaces/msg/motor_feedback.h>
+#include "messages.hpp"
 
 #include <etl/string_view.h>
+
 
 namespace freertos {
 
 
 void createMsgQueues() {
-    constexpr auto driveQueueItemSize = sizeof(rover_drive_interfaces__msg__MotorDrive);
-    constexpr int driveQueueItemCount = 1;
+    constexpr auto mobilityControlQueueSize = sizeof(int32_t);
+    constexpr int mobilityControlQueueItemCount = 1;
 
-    constexpr auto publisherQueueItemSize = sizeof(rover_drive_interfaces__msg__MotorFeedback);
-    constexpr int publisherQueueItemCount = 1;
+    constexpr auto mobilityFeedbackQueueItemSize = sizeof(MotorFeedback);
+    constexpr int mobilityFeedbackQueueItemCount = 1;
     // Create all the queues.
-    for (int i = 0; i < queue::publisherQueues.size(); i++) {
-        queue::publisherQueues[i] = xQueueCreate(publisherQueueItemCount, publisherQueueItemSize);
+    for (int i = 0; i < queue::motorFeedbackQueues.size(); i++) {
+        queue::motorFeedbackQueues[i] =
+            xQueueCreate(mobilityFeedbackQueueItemCount, mobilityFeedbackQueueItemSize);
 
-        queue::driveQueues[i] = xQueueCreate(driveQueueItemCount, driveQueueItemSize);
+        queue::mobilityControlQueues[i] =
+            xQueueCreate(mobilityControlQueueItemCount, mobilityControlQueueSize);
     }
 }
 

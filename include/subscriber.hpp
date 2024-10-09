@@ -14,13 +14,12 @@
 
 #include <rcl/subscription.h>
 #include <rclc/executor.h>
-#include <rover_drive_interfaces/msg/motor_drive.h>
 
 #include <etl/string_view.h>
 
 namespace ros {
 
-extern "C" void driveSubscriberCallback(const void* msgin, void* context);
+extern "C" void mobilityControlSubscriberCallback(const void* msgin, void* context);
 
 class Subscriber {
 public:
@@ -33,8 +32,6 @@ public:
 private:
     rcl_subscription_t subscriber_{};
 };
-
-etl::array<Subscriber, 4> createDriveSubscribers(rcl_node_t * node);
 
 } // namespace ros
 
