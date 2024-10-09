@@ -6,7 +6,7 @@
 #include "rmw_microros/ping.h"
 #include "subscriber.hpp"
 
-#include "BTS7960.hpp"
+#include "motor.hpp"
 #include "encoder_substep.hpp"
 #include "pinout.hpp"
 
@@ -18,7 +18,7 @@ namespace task {
 
 template <uint i> void motorTask(void* arg) {
     // Create the motor and encoder classes.
-    motor::BTS7960 motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
+    Motor motor(pinout::motorPwmL[i], pinout::motorPwmR[i]);
     encoder::EncoderSubstep encoder(
         pinout::encoderPio, pinout::encoderPioSm[i], pinout::encoderA[i]);
     sleep_ms(10);
@@ -83,7 +83,7 @@ template <uint i> void motorTask(void* arg) {
         //     (feedbackMsgSent.dutycycle) * (ros::parameter::maxMotorCurrent - 5.0f) / 100.0f;
 
         // Set the dutycyle of the motors.
-        motor.setSpeed(feedbackMsgSent.dutycycle);
+        motor.setSpeedPercent(feedbackMsgSent.dutycycle);
         // Send the feedback messeage to the queue
         xQueueOverwrite(freertos::queue::publisherQueues[i], &feedbackMsgSent);
         // Delay the task by the amount set in motor_pid_loop_period_ms parameter.

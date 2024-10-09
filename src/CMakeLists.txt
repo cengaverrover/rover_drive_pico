@@ -14,7 +14,7 @@ target_link_libraries(${NAME}
     micro_ros
     FreeRTOS-Kernel-Static
     etl::etl
-    pico_BTS7960
+    pico_motor
     pico_encoder_substep_class
 )
 	
