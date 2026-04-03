@@ -59,7 +59,7 @@ template <uint i> void motorTask(void* arg) {
         if (ros::parameter::motorPidMode) {
             const int32_t errorRpm = targetRpmReceived - feedbackMsgSent.rpm;
 
-            const float proportional = errorRpm * ros::parameter::motorPidKd;
+            const float proportional = errorRpm * ros::parameter::motorPidKp;
             integral += errorRpm * ros::parameter::motorPidKi;
             integral = etl::clamp(
                 integral, -ros::parameter::maxMotorDutyCycle, ros::parameter::maxMotorDutyCycle);
@@ -154,7 +154,7 @@ void microRosTask(void* arg) {
     // We need the second executor since we have more handles than the maximum
     // executor handle.
     constexpr int paramCount = 11;
-    ros::parameter::Server paramServer(&node, true, paramCount, false, false);
+    ros::parameter::Server paramServer(&node, true, paramCount, true, false);
     rclc_executor_t paramServerExecutor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&paramServerExecutor, &support.context,
         RCLC_EXECUTOR_PARAMETER_SERVER_HANDLES, &allocator));
@@ -169,9 +169,9 @@ void microRosTask(void* arg) {
         watchdog_update();
         // Spin the executors to check if there are new subscriber messeages or
         // parameter server requests.
-        const auto executorResult = rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
+        const auto executorResult = rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5));
         const auto paramExecutorResult =
-            rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(1));
+            rclc_executor_spin_some(&paramServerExecutor, RCL_MS_TO_NS(5));
         // Delay the tasks to free the core for other tasks.
         // TODO add parameter to control executor period.
         vTaskDelay(pdMS_TO_TICKS(ros::parameter::executorSpinPeriodMs));

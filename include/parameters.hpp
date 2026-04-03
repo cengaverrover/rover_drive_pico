@@ -49,7 +49,7 @@ private:
 
 inline int32_t maxMotorRpm = 20000;
 
-inline float maxMotorDutyCycle = 100.0f;
+inline float maxMotorDutyCycle = 80.0f;
 constexpr inline float maxMotorDutyCycleUpperConstraint = 100.0f;
 constexpr inline float maxMotorDutyCycleLowerConstraint = 0.0f;
 
@@ -57,11 +57,11 @@ inline float maxMotorCurrent = 50.0f;
 
 inline int32_t motorPidLoopPeriodMs = 20;
 
-inline int32_t motorTimeoutMs = 1500;
+inline int32_t motorTimeoutMs = 1000;
 
-inline int32_t motorFeedbackPeriodMs = 100;
+inline int32_t motorFeedbackPeriodMs = static_cast<int32_t>(1000.0f/60.0f);
 
-inline int32_t executorSpinPeriodMs = 50;
+inline int32_t executorSpinPeriodMs = static_cast<int32_t>(1000.0f/60.0f);
 
 inline bool motorPidMode = false;
 

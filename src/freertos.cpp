@@ -38,7 +38,7 @@ void createMsgQueues() {
 
 
 void createMicroRosTask() {
-    constexpr uint32_t microRosTaskStackSize = 4000;
+    constexpr uint32_t microRosTaskStackSize = 5000;
     constexpr uint32_t microRosTaskPriority = configMAX_PRIORITIES - 2;
     constexpr uint32_t microRosTaskCoreAffinity = 0x01;
     constexpr etl::string_view microRosTaskName{ "micro_ros_task" };

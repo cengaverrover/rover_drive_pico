@@ -141,9 +141,9 @@ rcl_ret_t Server::initParameters() {
 
 bool onParameterChange(const Parameter* oldParam, const Parameter* newParam, void* context) {
     auto paramServer = static_cast<parameter::Server*>(context);
-    if (oldParam == nullptr || newParam == nullptr || paramServer == nullptr) {
+    /*if (oldParam == nullptr || newParam == nullptr || paramServer == nullptr) {
         return false;
-    }
+    }*/
 
     void* const param = parameters[newParam->name.data];
     if (param != nullptr) {
